@@ -1,6 +1,10 @@
 from timers_bunch import TimersBunch
+from datetime import datetime
 
 class TimeManagerBot:
+
+    last_timer_start = 0
+    extended10 = 0
 
     def __init__(self, user_id, lang):
         self.lang = lang
@@ -62,19 +66,36 @@ class TimeManagerBot:
 
         return message
 
-    def get_pause_timer_message(self):
+    def get_started_timer_message(self):
         if self.lang == "EN":
-            message = 'Timer for {} min. is started! To pause the timer, press the button ⌛'.format(self.timers.current_time)
+            message = 'Timer for {} min. is started! To pause the timer, press the ⌛ button'.format(self.timers.current_time)
         else:
-            message = 'Таймер на {} мин. запущен. Чтобы приостановить таймер, жми на кнопку ⌛'.format(self.timers.current_time)
+            message = 'Таймер на {} мин. запущен. Чтобы приостановить таймер, жми на ⌛'.format(self.timers.current_time)
 
         return message
 
     def get_finished_timer_message(self):
         if self.lang == 'EN':
-            message = 'Timer for {} min. just finished. Continue?'.format(self.timers.current_time)
+            if self.timers.scheduled_bunch:
+                message = message = 'Timer for {} min. just finished. Continue?'.format(self.timers.current_time)
+            else:
+                message = 'All timers have finished! Well done!'
         else:
-            message = 'Таймер на {} мин. завершен. Продолжаем?'.format(self.timers.current_time)
+            if self.timers.scheduled_bunch:
+                message = message = 'Таймер на {} мин. завершен. Продолжаем?'.format(self.timers.current_time)
+            else:
+                message = 'Все таймеры завершены! Время отдыхать 💃'
+        return message
+
+    def get_paused_timer_message(self):
+        mins = self.timers.current_time
+        remain = self.timers.scheduled_bunch[0]
+
+        if self.lang == 'EN':
+            message = 'Timer for {} min. was paused. Remain {} min. Press any button to continue'.format(mins, remain)
+        else:
+            message = 'Таймер на {} мин. был остановлен. Осталось {} мин. Для продолжения нажми любую кнопку'.format(mins, remain)
+
         return message
 
     def get_alarm_message(self):
@@ -82,6 +103,15 @@ class TimeManagerBot:
             message = 'Time is over!'
         else:
             message = 'Время вышло!'
+        return message
+
+    def get_confirm_message(self):
+        if self.lang == 'EN':
+            message = 'You\'ve extended the current timer for {} minutes. Are you sure you don\'t want to change your' \
+                      'activity?\n\nYour brain need some rest to be more productive!'.format(self.extended10*10)
+        else:
+            message = 'Ты продлеваешь текущий таймер уже на {} минут. Не хочешь взять перерыв?' \
+                      '\n\nМозгу нужен отдых, чтобы оставаться продуктивным.'.format(self.extended10*10)
         return message
 
     def get_timers_count(self, time_periods):
@@ -99,10 +129,5 @@ class TimeManagerBot:
         return timers
 
     def start_timer(self, next_func):
+        self.last_timer_start = datetime.now()
         return self.timers.start_timer(next_func)
-
-
-
-timers = TimeManagerBot(1, 'RU')
-timers.timers.scheduled_bunch = []
-print(timers.get_current_timer_message())

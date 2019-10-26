@@ -21,7 +21,7 @@ class TimersBunch:
             current_timer = self.scheduled_bunch.popleft()
             self.prev_bunch.append(current_timer)
             self.current_time = current_timer
-            self.current_timer = threading.Timer(current_timer, next_func)
+            self.current_timer = threading.Timer(current_timer*60, next_func)
             self.current_timer.start()
             return True
         else:
@@ -33,7 +33,7 @@ class TimersBunch:
     def stop_timers(self):
         self.current_timer.cancel()
 
-    def set_current_timers_bunch(self, time_periods: list):
+    def set_current_timers_bunch(self, time_periods):
         self.scheduled_bunch = time_periods
 
     def get_time_periods(self, message:str):
