@@ -3,29 +3,42 @@ import threading
 from collections import deque
 
 class TimersBunch:
-    scheduled_bunch = deque()
-    prev_bunch = deque()
-    current_time = 0
-    current_timer = threading.Timer(0, None)
+
 
     def __init__(self):
 
-        # time_periods = self.get_time_periods(message)
-        # self.set_current_timers_bunch(time_periods)
+        self.scheduled_bunch = deque()
+        self.extended = 0
+        self.additional_time = False
+
+        self.prev_bunch = deque()
+        self.current_time = 0
+        self.current_timer = threading.Timer(0, None)
+
         pass
 
 
     def start_timer(self, next_func):
 
-        if self.scheduled_bunch:
-            current_timer = self.scheduled_bunch.popleft()
-            self.prev_bunch.append(current_timer)
-            self.current_time = current_timer
-            self.current_timer = threading.Timer(current_timer*60, next_func)
-            self.current_timer.start()
-            return True
+        if self.extended:
+            current_time = self.extended
+
+        elif self.scheduled_bunch:
+            current_time = self.scheduled_bunch.popleft()
+            self.prev_bunch.append(current_time)
+
         else:
             return False
+
+
+        self.current_time = current_time
+
+        self.current_timer = threading.Timer(current_time * 60, next_func)
+        self.current_timer.start()
+
+
+        return True
+
 
     def next_timer(self):
         self.start_timer()

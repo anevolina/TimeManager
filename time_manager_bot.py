@@ -97,7 +97,7 @@ def help_callback(bot, update):
     user_id = update.message.from_user.id
 
     if user_id in bot_collection:
-        message = bot_collection[user_id].get_help()
+        message = bot_collection[user_id].get_help_message()
         bot.send_message(chat_id=update.message.chat_id, text=message)
     else:
         start_callback(bot, update)
@@ -238,7 +238,7 @@ def callback_answer(bot, update):
 def start_bot(user_id, lang, bot, message_id):
 
     bot_collection[user_id] = TimeManagerBot(user_id, lang)
-    message = bot_collection[user_id].get_help()
+    message = bot_collection[user_id].get_help_message()
 
 
     bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
@@ -266,7 +266,7 @@ def pause_timer(bot, chat_id, message_id):
    time_was = bot_collection[chat_id].timers.current_time
    remain = time_was - time_passed
 
-   bot_collection[chat_id].timers.scheduled_bunch.appendleft(remain)
+   bot_collection[chat_id].timers.extended = remain
 
    message = bot_collection[chat_id].get_paused_timer_message()
    keyboard_buttons = get_keyboard_buttons('start', bot_collection[chat_id].lang, chat_id)
@@ -277,6 +277,9 @@ def pause_timer(bot, chat_id, message_id):
 
 def next_timer(bot, chat_id, message_id):
     bot_collection[chat_id].timers.current_timer.cancel()
+    bot_collection[chat_id].timers.extended = 0
+    bot_collection[chat_id].timers.additional_time = False
+
     start_timer(bot, chat_id, message_id)
 
 
@@ -291,7 +294,8 @@ def add_more_timer(bot, chat_id, message_id, confirm=False):
 
     else:
         bot_collection[chat_id].extended10 += 1
-        bot_collection[chat_id].timers.scheduled_bunch.appendleft(10)
+        bot_collection[chat_id].timers.extended = bot_collection[chat_id].add_more
+        bot_collection[chat_id].timers.additional_time = True
         start_timer(bot, chat_id, message_id, extended=True)
 
 
@@ -301,6 +305,8 @@ def update_timer(bot, user_id, message_id):
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
         message = bot_collection[user_id].get_finished_timer_message()
         bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id, reply_markup=reply_markup)
+        bot_collection[user_id].timers.extended = 0
+        bot_collection[user_id].timers.additional_time = False
 
         alarm = alarm_message(bot, user_id)
         alarm_thread = threading.Timer(0, alarm)

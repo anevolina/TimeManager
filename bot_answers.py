@@ -5,29 +5,19 @@ import re
 class TimeManagerBot:
 
     def __init__(self, user_id, lang):
-        self.lang = lang
+
         self.user_id = user_id
+
         self.timers = TimersBunch()
+
+        self.lang = lang
         self.alarm_count = 1
         self.alarm_message = ''
         self.add_more = 10
+
         self.last_timer_start = 0
         self.extended10 = 0
         self.auto_start = True
-
-    def get_help(self):
-
-        if self.lang == 'EN':
-            message = 'To start input times in minutes you want to count. For example, command 50-10-50-30 will create' \
-                      '4 timers with 50, 10, 50 and 30 minutes. Delimiters between numbers don\'t matter.' \
-                      '\n\n/settings  command will return current settings for timers.'
-        else:
-            message = 'Чтобы начать, введи нужное количество и значение для таймеров в минутах - например, команда 50-10-30-50 ' \
-                      'создаст 4 таймера по 50, 10, 30 и 50 минут.\n'\
-                      '\nРазделители между цифрами значения не имеют.' \
-                      '\n\nкоманда  /settings  выведет текущие настройки таймеров.'
-
-        return message
 
     def check_callbak(self, message, settings_update, user_id):
 
@@ -68,9 +58,27 @@ class TimeManagerBot:
                 else:
                     bot_message = self.get_wrong_format_message('add_more')
 
-
-
         return bot_message, timer_on
+
+    def start_timer(self, next_func):
+        self.last_timer_start = datetime.now()
+        return self.timers.start_timer(next_func)
+
+    # generate messages for bot answers
+
+    def get_help_message(self):
+
+        if self.lang == 'EN':
+            message = 'To start input times in minutes you want to count. For example, command 50-10-50-30 will create' \
+                      '4 timers with 50, 10, 50 and 30 minutes. Delimiters between numbers don\'t matter.' \
+                      '\n\n/settings  command will return current settings for timers.'
+        else:
+            message = 'Чтобы начать, введи нужное количество и значение для таймеров в минутах - например, команда 50-10-30-50 ' \
+                      'создаст 4 таймера по 50, 10, 30 и 50 минут.\n'\
+                      '\nРазделители между цифрами значения не имеют.' \
+                      '\n\nкоманда  /settings  выведет текущие настройки таймеров.'
+
+        return message
 
     def get_current_timer_message(self):
         if self.timers.scheduled_bunch:
@@ -105,10 +113,32 @@ class TimeManagerBot:
         return message
 
     def get_started_timer_message(self):
-        if self.lang == "EN":
-            message = 'Timer for {} min. is started! To pause the timer, press the ⌛ button'.format(self.timers.current_time)
+        timer_number = len(self.timers.prev_bunch)
+
+        if self.timers.additional_time:
+            if self.lang == "EN":
+                message = 'Timer #{} extended for {} min. To pause the timer, press the ⌛ button'\
+                    .format(timer_number, self.timers.current_time)
+            else:
+                message = 'Таймер #{} продлен на {} мин. Чтобы приостановить, жми на ⌛' \
+                    .format(timer_number, self.timers.current_time)
+
+        elif self.timers.extended:
+            if self.lang == "EN":
+                message = 'Timer #{} was resumed for the rest {} min. To pause the timer, press the ⌛ button' \
+                    .format(timer_number, self.timers.current_time)
+            else:
+                message = 'Таймер #{} возобновлен на оставшиеся {} мин. Чтобы приостановить, жми на ⌛' \
+                    .format(timer_number, self.timers.current_time)
+
         else:
-            message = 'Таймер на {} мин. запущен. Чтобы приостановить таймер, жми на ⌛'.format(self.timers.current_time)
+
+            if self.lang == "EN":
+                message = 'Timer #{} for {} min. is started! To pause the timer, press the ⌛ button'\
+                    .format(timer_number, self.timers.current_time)
+            else:
+                message = 'Таймер #{} на {} мин. запущен. Чтобы приостановить таймер, жми на ⌛'\
+                    .format(timer_number, self.timers.current_time)
 
         return message
 
@@ -127,12 +157,12 @@ class TimeManagerBot:
 
     def get_paused_timer_message(self):
         mins = self.timers.current_time
-        remain = self.timers.scheduled_bunch[0]
+        remain = self.timers.extended
 
         if self.lang == 'EN':
-            message = 'Timer for {} min. was paused. Remain {} min. Press any button to continue'.format(mins, remain)
+            message = 'Timer for {} min. was paused. Remain {} min. Press start to continue'.format(mins, remain)
         else:
-            message = 'Таймер на {} мин. был остановлен. Осталось {} мин. Для продолжения нажми любую кнопку'.format(mins, remain)
+            message = 'Таймер на {} мин. был остановлен. Осталось {} мин. Для продолжения жми старт'.format(mins, remain)
 
         return message
 
@@ -277,9 +307,7 @@ class TimeManagerBot:
 
         return timers
 
-    def start_timer(self, next_func):
-        self.last_timer_start = datetime.now()
-        return self.timers.start_timer(next_func)
+    # Additional functions
 
     def check_is_number(self, message):
         is_single_number = re.fullmatch(r'[0-9]+', message.strip())
