@@ -15,7 +15,6 @@ class TimersBunch:
         self.current_time = 0
         self.current_timer = threading.Timer(0, None)
 
-        pass
 
 
     def start_timer(self, next_func):
@@ -59,3 +58,7 @@ class TimersBunch:
 
         return deque(result)
 
+    def clear(self):
+        self.stop_timers()
+
+        self.__init__()

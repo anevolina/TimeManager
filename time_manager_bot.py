@@ -29,6 +29,8 @@ settings_update = {}
 lang_buttons = [[InlineKeyboardButton("Русский", callback_data='RU'),
                 InlineKeyboardButton("English", callback_data='EN')]]
 
+
+
 # Dynamic control buttons
 def get_keyboard_buttons(status, language, chat_id=None):
     """ Status could be:
@@ -55,6 +57,8 @@ def get_keyboard_buttons(status, language, chat_id=None):
             text2 = 'No more timers'
         else:
             text2 = 'Next  ⏩'
+
+        text3 = 'how much left?'
     else:
         if status == 'start':
             text1 = 'Старт ▶'
@@ -74,9 +78,12 @@ def get_keyboard_buttons(status, language, chat_id=None):
         else:
             text2 = 'Дальше  ⏩'
 
+        text3 = 'сколько осталось?'
+
 
     control_buttons = [[InlineKeyboardButton(text1, callback_data=callback_data),
-                        InlineKeyboardButton(text2, callback_data='next')]]
+                        InlineKeyboardButton(text2, callback_data='next')],
+                       [InlineKeyboardButton(text3, callback_data='status')]]
 
     return control_buttons
 
@@ -89,7 +96,6 @@ def get_keyboard_buttons(status, language, chat_id=None):
 def start_callback(bot, update):
     reply_markup = InlineKeyboardMarkup(lang_buttons)
     update.message.reply_text("Выбери язык | Choose language", reply_markup=reply_markup)
-
 
 
 # define reaction to /help command in tlgr
@@ -177,7 +183,7 @@ def message_answer(bot, update):
 
     user_message = update.message.text.strip()
 
-    bot_message, timer_on = bot_collection[user_id].check_callbak(user_message, settings_update, user_id)
+    bot_message, timer_on, prev_message = bot_collection[user_id].check_callbak(user_message, settings_update, user_id)
 
     if not bot_message:
         return
@@ -187,11 +193,17 @@ def message_answer(bot, update):
     if timer_on and not bot_collection[user_id].auto_start:
         bot_message = bot_collection[user_id].get_current_timer_message()
         reply_markup = InlineKeyboardMarkup(get_keyboard_buttons('start', bot_collection[user_id].lang, user_id))
-        bot.send_message(chat_id=user_id, text=bot_message, reply_markup=reply_markup)
+        sent_message = bot.send_message(chat_id=user_id, text=bot_message, reply_markup=reply_markup)
+        bot_collection[user_id].message_id = sent_message.message_id
 
     elif timer_on and bot_collection[user_id].auto_start:
         sent_message = bot.send_message(chat_id=user_id, text='First timer is about to start')
+        bot_collection[user_id].message_id = sent_message.message_id
         start_timer(bot, user_id, sent_message.message_id)
+
+    if prev_message:
+        set_old_timers_message(bot, user_id, prev_message)
+
 
 
 # ----------------------------------------------
@@ -230,6 +242,8 @@ def callback_answer(bot, update):
 
     elif query.data == '10confirm':
         add_more_timer(bot, chat_id, message_id, confirm=True)
+    elif query.data == 'status':
+        check_status(bot, chat_id, query)
 
 # ----------------------------------------------
 # work functions
@@ -261,10 +275,7 @@ def start_timer(bot, chat_id, message_id, extended=False):
 def pause_timer(bot, chat_id, message_id):
    bot_collection[chat_id].timers.current_timer.cancel()
 
-   current_time = datetime.now()
-   time_passed = convert_time(current_time - bot_collection[chat_id].last_timer_start)
-   time_was = bot_collection[chat_id].timers.current_time
-   remain = time_was - time_passed
+   remain = remain_time(chat_id)
 
    bot_collection[chat_id].timers.extended = remain
 
@@ -277,8 +288,7 @@ def pause_timer(bot, chat_id, message_id):
 
 def next_timer(bot, chat_id, message_id):
     bot_collection[chat_id].timers.current_timer.cancel()
-    bot_collection[chat_id].timers.extended = 0
-    bot_collection[chat_id].timers.additional_time = False
+    bot_settings_set_nul(chat_id)
 
     start_timer(bot, chat_id, message_id)
 
@@ -299,14 +309,36 @@ def add_more_timer(bot, chat_id, message_id, confirm=False):
         start_timer(bot, chat_id, message_id, extended=True)
 
 
+def check_status(bot, chat_id, query):
+    remain = remain_time(chat_id)
+    query_id = query.id
+
+    message = bot_collection[chat_id].get_remained_message(remain)
+
+    bot.answer_callback_query(callback_query_id=query_id, text=message)
+
+    pass
+
+
+def set_old_timers_message(bot, chat_id, message_id):
+
+    message = bot_collection[chat_id].get_old_timers_message()
+
+    bot.edit_message_text(text=message, chat_id=chat_id, message_id=message_id)
+
+
+def bot_settings_set_nul(chat_id):
+
+    bot_collection[chat_id].timers.extended = 0
+    bot_collection[chat_id].timers.additional_time = False
+
 def update_timer(bot, user_id, message_id):
     def finish_timer():
         keyboard_buttons = get_keyboard_buttons('extend', bot_collection[user_id].lang, user_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
         message = bot_collection[user_id].get_finished_timer_message()
         bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id, reply_markup=reply_markup)
-        bot_collection[user_id].timers.extended = 0
-        bot_collection[user_id].timers.additional_time = False
+        bot_settings_set_nul(user_id)
 
         alarm = alarm_message(bot, user_id)
         alarm_thread = threading.Timer(0, alarm)
@@ -329,10 +361,20 @@ def alarm_message(bot, user_id):
 
     return ring_alarm
 
+
 def convert_time(time_passed):
     minutes = time_passed.seconds // 60
 
     return minutes
+
+
+def remain_time(chat_id):
+    current_time = datetime.now()
+    time_passed = convert_time(current_time - bot_collection[chat_id].last_timer_start)
+    time_was = bot_collection[chat_id].timers.current_time
+    remain = time_was - time_passed
+
+    return remain
 
 
 # define command handlers

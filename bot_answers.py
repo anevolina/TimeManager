@@ -14,15 +14,17 @@ class TimeManagerBot:
         self.alarm_count = 1
         self.alarm_message = ''
         self.add_more = 10
+        self.auto_start = True
 
         self.last_timer_start = 0
         self.extended10 = 0
-        self.auto_start = True
+        self.message_id = 0
 
     def check_callbak(self, message, settings_update, user_id):
 
         timer_on = False
         bot_message = 'Something went wrong'
+        prev_message = 0
 
         set_update = settings_update.get(user_id)
 
@@ -31,6 +33,10 @@ class TimeManagerBot:
             time_periods = self.timers.get_time_periods(message)
 
             if len(time_periods) > 0:
+
+                prev_message = self.message_id
+
+                self.refresh_timers()
                 self.timers.set_current_timers_bunch(time_periods)
                 bot_message = self.get_init_timers_message(time_periods)
                 timer_on = True
@@ -58,11 +64,20 @@ class TimeManagerBot:
                 else:
                     bot_message = self.get_wrong_format_message('add_more')
 
-        return bot_message, timer_on
+        return bot_message, timer_on, prev_message
 
     def start_timer(self, next_func):
         self.last_timer_start = datetime.now()
         return self.timers.start_timer(next_func)
+
+    def refresh_timers(self):
+
+        self.timers.clear()
+
+        self.last_timer_start = 0
+        self.extended10 = 0
+        self.message_id = 0
+
 
     # generate messages for bot answers
 
@@ -291,6 +306,23 @@ class TimeManagerBot:
         else:
             message = 'Неправильный формат сообщения для установки параметра /{}. Ожидается одно число.' \
                       '\n\nДля отмены изменений введи команду /cancel'.format(set_parameter)
+        return message
+
+    def get_remained_message(self, minutes):
+        if self.lang == 'EN':
+            message = '{} min. remain'.format(minutes)
+        else:
+            message = '{} мин. осталось'.format(minutes)
+
+        return message
+
+    def get_old_timers_message(self):
+
+        if self.lang == 'EN':
+            message = 'New bunch of timers were wet. Current timers are no longer exist.'
+        else:
+            message = 'Установлены новые таймеры. Текущие таймеры больше не существуют'
+
         return message
 
     def get_timers_count(self, time_periods):
