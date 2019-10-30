@@ -30,7 +30,6 @@ lang_buttons = [[InlineKeyboardButton("Русский", callback_data='RU'),
                 InlineKeyboardButton("English", callback_data='EN')]]
 
 
-
 # Dynamic control buttons
 def get_keyboard_buttons(status, language, chat_id=None):
     """ Status could be:
@@ -145,6 +144,7 @@ def alarm_message_callback(bot, update):
     message = bot_collection[user_id].get_set_alarm_message_message()
     bot.send_message(chat_id=user_id, text=message)
 
+
 # define reaction to /add_more command in tlgr
 def add_more_callback(bot, update):
     user_id = update.message.from_user.id
@@ -153,6 +153,7 @@ def add_more_callback(bot, update):
     message = bot_collection[user_id].get_set_add_more_message()
     bot.send_message(chat_id=user_id, text=message)
 
+
 # define reaction to /cancel command in tlgr
 def cancel_callback(bot, update):
     user_id = update.message.from_user.id
@@ -160,6 +161,7 @@ def cancel_callback(bot, update):
     settings_update.pop(user_id)
     message = bot_collection[user_id].get_cancel_message()
     bot.send_message(chat_id=user_id, text=message)
+
 
 # define reaction to /auto_start command in tlgr
 def auto_start_callback(bot, update):
@@ -173,6 +175,7 @@ def auto_start_callback(bot, update):
 # ----------------------------------------------
 # reaction for simple message
 # ----------------------------------------------
+
 
 def message_answer(bot, update):
     user_id = update.message.from_user.id
@@ -203,7 +206,6 @@ def message_answer(bot, update):
 
     if prev_message:
         set_old_timers_message(bot, user_id, prev_message)
-
 
 
 # ----------------------------------------------
@@ -248,6 +250,7 @@ def callback_answer(bot, update):
 # ----------------------------------------------
 # work functions
 # ----------------------------------------------
+
 
 def start_bot(user_id, lang, bot, message_id):
 
@@ -332,6 +335,7 @@ def bot_settings_set_nul(chat_id):
     bot_collection[chat_id].timers.extended = 0
     bot_collection[chat_id].timers.additional_time = False
 
+
 def update_timer(bot, user_id, message_id):
     def finish_timer():
         keyboard_buttons = get_keyboard_buttons('extend', bot_collection[user_id].lang, user_id)
@@ -374,7 +378,7 @@ def remain_time(chat_id):
     time_was = bot_collection[chat_id].timers.current_time
     remain = time_was - time_passed
 
-    return remain
+    return remain if remain > 0 else 0
 
 
 # define command handlers

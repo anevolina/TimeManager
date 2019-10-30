@@ -1,6 +1,7 @@
 from timers_bunch import TimersBunch
 from datetime import datetime
 import re
+import json
 
 class TimeManagerBot:
 
@@ -63,6 +64,8 @@ class TimeManagerBot:
                     settings_update.pop(user_id)
                 else:
                     bot_message = self.get_wrong_format_message('add_more')
+
+            self.save_settings(set_update)
 
         return bot_message, timer_on, prev_message
 
@@ -338,6 +341,9 @@ class TimeManagerBot:
                 timers += ' и ' + str(time_periods[-1])
 
         return timers
+
+    def save_settings(self):
+        pass
 
     # Additional functions
 
