@@ -128,7 +128,6 @@ def settings_callback(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
-
 # define reaction to /language command in tlgr
 def language_callback(bot, update):
     user_id = update.message.from_user.id
@@ -293,6 +292,7 @@ def callback_answer(bot, update):
 
     elif query.data == '10confirm':
         add_more_timer(bot, chat_id, message_id, confirm=True)
+
     elif query.data == 'status':
         check_status(bot, chat_id, query)
 
@@ -313,6 +313,7 @@ def start_bot(user_id, lang, bot, message_id):
 def start_timer(bot, chat_id, message_id, extended=False):
     next_func = update_timer(bot, chat_id, message_id)
     result = bot_collection[chat_id].start_timer(next_func)
+    bot_collection[chat_id].paused = False
 
     if not extended:
         bot_collection[chat_id].extended10 = 0
@@ -330,6 +331,7 @@ def pause_timer(bot, chat_id, message_id):
    remain = remain_time(chat_id)
 
    bot_collection[chat_id].timers.extended = remain
+   bot_collection[chat_id].paused = True
 
    message = bot_collection[chat_id].get_paused_timer_message()
    keyboard_buttons = get_keyboard_buttons('start', bot_collection[chat_id].lang, chat_id)
@@ -383,6 +385,7 @@ def bot_settings_set_nul(chat_id):
 
     bot_collection[chat_id].timers.extended = 0
     bot_collection[chat_id].timers.additional_time = False
+    bot_collection[chat_id].paused = False
 
 
 def update_timer(bot, user_id, message_id):
@@ -420,6 +423,7 @@ def convert_time(time_passed):
 
     return minutes
 
+
 def try_load(user_id):
 
     dir_name = os.getcwd()
@@ -438,14 +442,16 @@ def try_load(user_id):
 
 
 def remain_time(chat_id):
+
+    if bot_collection[chat_id].paused:
+        return bot_collection[chat_id].timers.extended
+
     current_time = datetime.now()
     time_passed = convert_time(current_time - bot_collection[chat_id].last_timer_start)
     time_was = bot_collection[chat_id].timers.current_time
     remain = time_was - time_passed
 
     return remain if remain > 0 else 0
-
-
 
 
 # define command handlers

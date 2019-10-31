@@ -19,11 +19,10 @@ class TimeManagerBot:
         self.add_more = 10
         self.auto_start = True
 
-        # self.load_settings()
-
         self.last_timer_start = 0
         self.extended10 = 0
         self.message_id = 0
+        self.paused = False
 
     def check_callbak(self, message, settings_update, user_id):
 
@@ -165,14 +164,16 @@ class TimeManagerBot:
         return message
 
     def get_finished_timer_message(self):
+        timer_number = len(self.timers.prev_bunch)
+
         if self.lang == 'EN':
             if self.timers.scheduled_bunch:
-                message = message = 'Timer for {} min. just finished. Continue?'.format(self.timers.current_time)
+                message = message = 'Timer #{} for {} min. just finished. Continue?'.format(timer_number, self.timers.current_time)
             else:
                 message = 'All timers have finished! Well done!'
         else:
             if self.timers.scheduled_bunch:
-                message = message = 'Таймер на {} мин. завершен. Продолжаем?'.format(self.timers.current_time)
+                message = message = 'Таймер #{} на {} мин. завершен. Продолжаем?'.format(timer_number, self.timers.current_time)
             else:
                 message = 'Все таймеры завершены! Время отдыхать 💃'
         return message
