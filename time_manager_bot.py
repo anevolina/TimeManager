@@ -93,6 +93,7 @@ def get_keyboard_buttons(status, language, chat_id=None):
 
 # define reaction to /start command in tlgr
 def start_callback(bot, update):
+
     reply_markup = InlineKeyboardMarkup(lang_buttons)
     update.message.reply_text("Выбери язык | Choose language", reply_markup=reply_markup)
 
@@ -101,22 +102,31 @@ def start_callback(bot, update):
 def help_callback(bot, update):
     user_id = update.message.from_user.id
 
-    if user_id in bot_collection:
-        message = bot_collection[user_id].get_help_message()
-        bot.send_message(chat_id=update.message.chat_id, text=message)
-    else:
-        start_callback(bot, update)
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
+
+    message = bot_collection[user_id].get_help_message()
+    bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
 # define reaction to /settings command in tlgr
 def settings_callback(bot, update):
     user_id = update.message.from_user.id
 
-    if user_id in bot_collection:
-        message = bot_collection[user_id].get_settings_message()
-        bot.send_message(chat_id=update.message.chat_id, text=message)
-    else:
-        start_callback(bot, update)
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
+
+    message = bot_collection[user_id].get_settings_message()
+    bot.send_message(chat_id=update.message.chat_id, text=message)
+
 
 
 # define reaction to /language command in tlgr
@@ -131,6 +141,13 @@ def language_callback(bot, update):
 def alarm_count_callback(bot, update):
     user_id = update.message.from_user.id
 
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
+
     settings_update[user_id] = 'alarm_count'
     message = bot_collection[user_id].get_set_alarm_count_message()
     bot.send_message(chat_id=user_id, text=message)
@@ -139,6 +156,13 @@ def alarm_count_callback(bot, update):
 # define reaction to /alarm_message command in tlgr
 def alarm_message_callback(bot, update):
     user_id = update.message.from_user.id
+
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
 
     settings_update[user_id] = 'alarm_message'
     message = bot_collection[user_id].get_set_alarm_message_message()
@@ -149,6 +173,13 @@ def alarm_message_callback(bot, update):
 def add_more_callback(bot, update):
     user_id = update.message.from_user.id
 
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
+
     settings_update[user_id] = 'add_more'
     message = bot_collection[user_id].get_set_add_more_message()
     bot.send_message(chat_id=user_id, text=message)
@@ -158,6 +189,13 @@ def add_more_callback(bot, update):
 def cancel_callback(bot, update):
     user_id = update.message.from_user.id
 
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
+
     settings_update.pop(user_id)
     message = bot_collection[user_id].get_cancel_message()
     bot.send_message(chat_id=user_id, text=message)
@@ -166,6 +204,13 @@ def cancel_callback(bot, update):
 # define reaction to /auto_start command in tlgr
 def auto_start_callback(bot, update):
     user_id = update.message.from_user.id
+
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
 
     bot_collection[user_id].auto_start = not bot_collection[user_id].auto_start
 
@@ -181,8 +226,12 @@ def message_answer(bot, update):
     user_id = update.message.from_user.id
 
     if user_id not in bot_collection:
-        start_callback(bot, update)
-        return
+
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return
 
     user_message = update.message.text.strip()
 
@@ -256,7 +305,7 @@ def start_bot(user_id, lang, bot, message_id):
 
     bot_collection[user_id] = TimeManagerBot(user_id, lang)
     message = bot_collection[user_id].get_help_message()
-
+    bot_collection[user_id].save_settings()
 
     bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
 
@@ -371,6 +420,22 @@ def convert_time(time_passed):
 
     return minutes
 
+def try_load(user_id):
+
+    dir_name = os.getcwd()
+
+    filepath = os.path.join(dir_name, 'settings', str(user_id) + '.txt')
+
+    file_exist = os.path.exists(filepath)
+
+    if file_exist:
+        bot_collection[user_id] = TimeManagerBot(user_id, 'EN')
+        bot_collection[user_id].load_settings(filepath)
+
+        return True
+
+    return False
+
 
 def remain_time(chat_id):
     current_time = datetime.now()
@@ -379,6 +444,8 @@ def remain_time(chat_id):
     remain = time_was - time_passed
 
     return remain if remain > 0 else 0
+
+
 
 
 # define command handlers

@@ -1,11 +1,13 @@
 from timers_bunch import TimersBunch
 from datetime import datetime
 import re
+import os
 import json
+
 
 class TimeManagerBot:
 
-    def __init__(self, user_id, lang):
+    def __init__(self, user_id, lang='EN'):
 
         self.user_id = user_id
 
@@ -16,6 +18,8 @@ class TimeManagerBot:
         self.alarm_message = ''
         self.add_more = 10
         self.auto_start = True
+
+        # self.load_settings()
 
         self.last_timer_start = 0
         self.extended10 = 0
@@ -65,7 +69,7 @@ class TimeManagerBot:
                 else:
                     bot_message = self.get_wrong_format_message('add_more')
 
-            self.save_settings(set_update)
+            self.save_settings()
 
         return bot_message, timer_on, prev_message
 
@@ -322,9 +326,9 @@ class TimeManagerBot:
     def get_old_timers_message(self):
 
         if self.lang == 'EN':
-            message = 'New bunch of timers were wet. Current timers are no longer exist.'
+            message = 'New bunch of timers were wet. Previous timers are no longer exist.'
         else:
-            message = 'Установлены новые таймеры. Текущие таймеры больше не существуют'
+            message = 'Установлены новые таймеры. Предыдущие таймеры больше не существуют'
 
         return message
 
@@ -343,7 +347,33 @@ class TimeManagerBot:
         return timers
 
     def save_settings(self):
-        pass
+
+        filepath = os.path.join(os.path.dirname(os.path.abspath(os.path.abspath(__file__))), 'settings',
+                                str(self.user_id)+'.txt')
+        settings = {
+            'lang': self.lang,
+            'alarm_count': self.alarm_count,
+            'alarm_message': self.alarm_message,
+            'add_more': self.add_more,
+            'auto_start': self.auto_start
+        }
+
+        file_settings = open(filepath, 'w')
+        json.dump(settings, file_settings)
+
+        return filepath
+
+    def load_settings(self, filepath):
+
+        file_settings = open(filepath, 'r')
+        settings = json.load(file_settings)
+
+        self.lang = settings['lang']
+        self.alarm_count = settings['alarm_count']
+        self.alarm_message = settings['alarm_message']
+        self.add_more = settings['add_more']
+        self.auto_start = settings['auto_start']
+
 
     # Additional functions
 
@@ -352,3 +382,6 @@ class TimeManagerBot:
 
         return is_single_number
 
+
+check = TimeManagerBot(1, 'RU')
+print(check.alarm_message)
