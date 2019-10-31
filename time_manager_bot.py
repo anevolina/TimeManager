@@ -428,7 +428,7 @@ def try_load(user_id):
 
     dir_name = os.getcwd()
 
-    filepath = os.path.join(dir_name, 'settings', str(user_id) + '.txt')
+    filepath = os.path.join(dir_name, 'settings', str(user_id) + '.json')
 
     file_exist = os.path.exists(filepath)
 

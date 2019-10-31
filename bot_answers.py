@@ -350,7 +350,7 @@ class TimeManagerBot:
     def save_settings(self):
 
         filepath = os.path.join(os.path.dirname(os.path.abspath(os.path.abspath(__file__))), 'settings',
-                                str(self.user_id)+'.txt')
+                                str(self.user_id)+'.json')
         settings = {
             'lang': self.lang,
             'alarm_count': self.alarm_count,
