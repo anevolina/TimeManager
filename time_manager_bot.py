@@ -35,53 +35,58 @@ def get_keyboard_buttons(status, language, chat_id=None):
     """ Status could be:
     start - to start current timer
     pause - to pause current timer
-    extend - to extend currennt timer for 5 mins
+    10more - to extend current timer for add_more minutes (parameter from settings)
+    10confirm - to confirm extending for timers - happens after 3 extends in a row
     """
 
     if language == 'EN':
         if status == 'start':
-            text1 = 'Start  ▶'
-            callback_data = 'start'
+            text1 = '▶ Start '
+            callback_data1 = 'start'
         elif status == 'pause':
-            text1 = 'Pause  ⌛'
-            callback_data = 'pause'
+            text1 = '⌛  Pause'
+            callback_data1 = 'pause'
         elif status == '10confirm':
-            text1 = '💯 sure 💯'
-            callback_data = '10confirm'
+            text1 = '💯 confirm'
+            callback_data1 = '10confirm'
         else:
-            text1 = 'Give me more minutes  🤓'
-            callback_data = '10more'
+            text1 = '🕝 Gimme more'
+            callback_data1 = '10more'
 
         if bot_collection[chat_id] and not bot_collection[chat_id].timers.scheduled_bunch:
-            text2 = 'No more timers'
+            text2 = '🔄 Repeat'
+            callback_data2 = 'repeat'
         else:
-            text2 = 'Next  ⏩'
+            text2 = '⏩ Next'
+            callback_data2 = 'next'
 
-        text3 = 'how much left?'
+        text3 = '❓ How much left ❓'
     else:
         if status == 'start':
-            text1 = 'Старт ▶'
-            callback_data = 'start'
+            text1 = '▶  Старт'
+            callback_data1 = 'start'
         elif status == 'pause':
-            text1 = 'Останови ⌛'
-            callback_data = 'pause'
+            text1 = '⌛ Пауза'
+            callback_data1 = 'pause'
         elif status == '10confirm':
-            text1 = '💯 все ок 💯'
-            callback_data = '10confirm'
+            text1 = '💯 все ок'
+            callback_data1 = '10confirm'
         else:
-            text1 = 'Мне нужно еще время!  🤓'
-            callback_data = '10more'
+            text1 = '🕝  Добавь еще!'
+            callback_data1 = '10more'
 
         if bot_collection[chat_id] and not bot_collection[chat_id].timers.scheduled_bunch:
-            text2 = 'Таймеров больше нет'
+            text2 = '🔄  Повтори'
+            callback_data2 = 'repeat'
         else:
-            text2 = 'Дальше  ⏩'
+            text2 = '⏩ Дальше'
+            callback_data2 = 'next'
 
-        text3 = 'сколько осталось?'
+        text3 = '❓ Сколько осталось ❓'
 
 
-    control_buttons = [[InlineKeyboardButton(text1, callback_data=callback_data),
-                        InlineKeyboardButton(text2, callback_data='next')],
+    control_buttons = [[InlineKeyboardButton(text1, callback_data=callback_data1),
+                        InlineKeyboardButton(text2, callback_data=callback_data2)],
                        [InlineKeyboardButton(text3, callback_data='status')]]
 
     return control_buttons
@@ -296,12 +301,17 @@ def callback_answer(bot, update):
     elif query.data == 'status':
         check_status(bot, chat_id, query)
 
+    elif query.data == 'repeat':
+        repeat_timers(bot, chat_id, message_id)
+
 # ----------------------------------------------
 # work functions
 # ----------------------------------------------
 
 
 def start_bot(user_id, lang, bot, message_id):
+    "Start bot and add it into collection"
+
 
     bot_collection[user_id] = TimeManagerBot(user_id, lang)
     message = bot_collection[user_id].get_help_message()
@@ -311,6 +321,8 @@ def start_bot(user_id, lang, bot, message_id):
 
 
 def start_timer(bot, chat_id, message_id, extended=False):
+    "Start every new timer. If previous timer was paused, started for the remain amount of time"
+
     next_func = update_timer(bot, chat_id, message_id)
     result = bot_collection[chat_id].start_timer(next_func)
     bot_collection[chat_id].paused = False
@@ -326,21 +338,25 @@ def start_timer(bot, chat_id, message_id, extended=False):
 
 
 def pause_timer(bot, chat_id, message_id):
-   bot_collection[chat_id].timers.current_timer.cancel()
+   "Pause timer and save remain time"
 
-   remain = remain_time(chat_id)
+    bot_collection[chat_id].timers.current_timer.cancel()
 
-   bot_collection[chat_id].timers.extended = remain
-   bot_collection[chat_id].paused = True
+    remain = remain_time(chat_id)
 
-   message = bot_collection[chat_id].get_paused_timer_message()
-   keyboard_buttons = get_keyboard_buttons('start', bot_collection[chat_id].lang, chat_id)
-   reply_markup = InlineKeyboardMarkup(keyboard_buttons)
+    bot_collection[chat_id].timers.extended = remain
+    bot_collection[chat_id].paused = True
 
-   bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message, reply_markup=reply_markup)
+    message = bot_collection[chat_id].get_paused_timer_message()
+    keyboard_buttons = get_keyboard_buttons('start', bot_collection[chat_id].lang, chat_id)
+    reply_markup = InlineKeyboardMarkup(keyboard_buttons)
+
+    bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message, reply_markup=reply_markup)
 
 
 def next_timer(bot, chat_id, message_id):
+    "Set to zero all additional settings, and start next timer"
+
     bot_collection[chat_id].timers.current_timer.cancel()
     bot_settings_set_nul(chat_id)
 
@@ -348,6 +364,7 @@ def next_timer(bot, chat_id, message_id):
 
 
 def add_more_timer(bot, chat_id, message_id, confirm=False):
+    "Ask to confirm every extension after 3 times in a row"
 
     if bot_collection[chat_id].extended10 >= 3 and not confirm:
         message = bot_collection[chat_id].get_confirm_message()
@@ -364,6 +381,8 @@ def add_more_timer(bot, chat_id, message_id, confirm=False):
 
 
 def check_status(bot, chat_id, query):
+    "Check how many minutes remain for current timer"
+
     remain = remain_time(chat_id)
     query_id = query.id
 
@@ -375,6 +394,7 @@ def check_status(bot, chat_id, query):
 
 
 def set_old_timers_message(bot, chat_id, message_id):
+    "Delete buttons for the last set of timers"
 
     message = bot_collection[chat_id].get_old_timers_message()
 
@@ -382,6 +402,7 @@ def set_old_timers_message(bot, chat_id, message_id):
 
 
 def bot_settings_set_nul(chat_id):
+    "Set to null additional settings for a timer"
 
     bot_collection[chat_id].timers.extended = 0
     bot_collection[chat_id].timers.additional_time = False
@@ -389,6 +410,7 @@ def bot_settings_set_nul(chat_id):
 
 
 def update_timer(bot, user_id, message_id):
+    "Function called after finishing every timer"
     def finish_timer():
         keyboard_buttons = get_keyboard_buttons('extend', bot_collection[user_id].lang, user_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
@@ -404,6 +426,8 @@ def update_timer(bot, user_id, message_id):
 
 
 def alarm_message(bot, user_id):
+    "Function to send and delete messages like alarm"
+
     def ring_alarm():
 
         message = bot_collection[user_id].get_alarm_message()
@@ -419,12 +443,14 @@ def alarm_message(bot, user_id):
 
 
 def convert_time(time_passed):
+    "Converting delta datetime to minutes"
     minutes = time_passed.seconds // 60
 
     return minutes
 
 
 def try_load(user_id):
+    "Try to load settings for current user"
 
     dir_name = os.getcwd()
 
@@ -442,6 +468,7 @@ def try_load(user_id):
 
 
 def remain_time(chat_id):
+    "Return how many time left for current timer"
 
     if bot_collection[chat_id].paused:
         return bot_collection[chat_id].timers.extended
@@ -452,6 +479,12 @@ def remain_time(chat_id):
     remain = time_was - time_passed
 
     return remain if remain > 0 else 0
+
+def repeat_timers(bot, chat_id, message_id):
+    "Repeat whole bunch of the last timers"
+
+    bot_collection[chat_id].timers.repeat()
+    start_timer(bot, chat_id, message_id)
 
 
 # define command handlers
