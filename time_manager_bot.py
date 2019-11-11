@@ -239,7 +239,7 @@ def message_answer(bot, update):
 
     user_message = update.message.text.strip()
 
-    bot_message, timer_on, prev_message = bot_collection[user_id].check_callbak(user_message, settings_update, user_id)
+    bot_message, timer_on, prev_message = bot_collection[user_id].check_user_message(user_message, settings_update, user_id)
 
     if not bot_message:
         return

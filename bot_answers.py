@@ -6,25 +6,50 @@ import json
 
 
 class TimeManagerBot:
+    """
+    Define answers to user actions according to language settings,
+    and reaction to callback messages
+    """
 
     def __init__(self, user_id, lang='EN'):
+        """
+        :param user_id: unique identification for bot
+        :param lang: define language for bot
+
+        User settings, could be changed manually by user:
+        - lang - ['EN', 'RU'] - language for the bot
+        - alarm_count - INTEGER - how many times alarm message will appear
+        - alarm_message - STRING - what message to show when timer's done
+        - add_more - INTEGER - how many minutes will be added to extend current timer
+        - auto_start - BOOLEAN - is first timer starts automatically after user message, or it should be confirmed
+
+        Inner variables:
+        - last_timer_start - DATETIME - in what time the last timer was start
+        - extended10 - INTEGER - how many times the last timer was extended
+        - message_id - TLGR_VARIABLE - in which message id the current timer updates
+        - paused - is the current timer paused
+        """
+
 
         self.user_id = user_id
 
         self.timers = TimersBunch()
 
+        # User settings, could be changed manually
         self.lang = lang
         self.alarm_count = 1
         self.alarm_message = ''
         self.add_more = 10
         self.auto_start = True
 
+        # Additional variables, just for inner use
         self.last_timer_start = 0
         self.extended10 = 0
         self.message_id = 0
         self.paused = False
 
-    def check_callbak(self, message, settings_update, user_id):
+    def check_user_message(self, message, settings_update, user_id):
+        """Define reaction to user input - set timers or change settings"""
 
         timer_on = False
         bot_message = 'Something went wrong'
@@ -33,6 +58,7 @@ class TimeManagerBot:
         set_update = settings_update.get(user_id)
 
         if not set_update:
+        # user doesn't want to change settings
 
             time_periods = self.timers.get_time_periods(message)
 
@@ -45,45 +71,58 @@ class TimeManagerBot:
                 bot_message = self.get_init_timers_message(time_periods)
                 timer_on = True
         else:
-            if set_update == 'alarm_message':
-                self.alarm_message = message
-                bot_message = self.get_setted_alarm_message_message()
-                settings_update.pop(user_id)
-
-            elif set_update == 'alarm_count':
-                count = self.check_is_number(message)
-                if count:
-                    self.alarm_count = int(message)
-                    bot_message = self.get_setted_alarm_count_message()
-                    settings_update.pop(user_id)
-                else:
-                    bot_message = self.get_wrong_format_message('alarm_count')
-
-            elif set_update == 'add_more':
-                count = self.check_is_number(message)
-                if count:
-                    self.add_more = int(message)
-                    bot_message = self.get_setted_add_more_message()
-                    settings_update.pop(user_id)
-                else:
-                    bot_message = self.get_wrong_format_message('add_more')
-
-            self.save_settings()
+            bot_message = self.set_settings(user_id, message, settings_update, set_update)
 
         return bot_message, timer_on, prev_message
 
+    def set_settings(self, user_id, message, settings_update, set_update):
+        """Check what kind of settings a user wants to change,
+        verify their input and save new parameter in database"""
+
+        bot_message = 'Something went wrong in settings'
+
+        if set_update == 'alarm_message':
+            self.alarm_message = message
+            bot_message = self.get_setted_alarm_message_message()
+            settings_update.pop(user_id)
+
+        elif set_update == 'alarm_count':
+            count = self.check_is_number(message)
+            if count:
+                self.alarm_count = int(message)
+                bot_message = self.get_setted_alarm_count_message()
+                settings_update.pop(user_id)
+            else:
+                bot_message = self.get_wrong_format_message('alarm_count')
+
+        elif set_update == 'add_more':
+            count = self.check_is_number(message)
+
+            if count:
+                self.add_more = int(message)
+                bot_message = self.get_setted_add_more_message()
+                settings_update.pop(user_id)
+            else:
+                bot_message = self.get_wrong_format_message('add_more')
+
+        self.save_settings()
+
+        return bot_message
+
     def start_timer(self, next_func):
+        """Start new thread with timer"""
+
         self.last_timer_start = datetime.now()
         return self.timers.start_timer(next_func)
 
     def refresh_timers(self):
+        """Set all timers settings to 0"""
 
         self.timers.clear()
 
         self.last_timer_start = 0
         self.extended10 = 0
         self.message_id = 0
-
 
     # generate messages for bot answers
 
@@ -270,11 +309,11 @@ class TimeManagerBot:
 
     def get_set_add_more_message(self):
         if self.lang == 'EN':
-            message = 'Current parameter will define how many minutes will be automaticly added with \'Give me more minutes  🤓\' ' \
+            message = 'Current parameter will define how many minutes will be automaticly added with \'🕝  Gimme more\' ' \
                       'button. Current value - {}.\n\nTo cancel changes input /cancel command'.format(self.add_more)
 
         else:
-            message = 'Данный параметр задает, сколько минут будет добавлено при нажатии на кнопку \'Мне нужно еще время!  🤓\'' \
+            message = 'Данный параметр задает, сколько минут будет добавлено при нажатии на кнопку \'🕝  Добавь еще!\'' \
                       'Текущее значение - {}.\n\nДля отмены изменений введи команду /cancel'.format(self.add_more)
         return message
 
@@ -318,22 +357,23 @@ class TimeManagerBot:
 
     def get_remained_message(self, minutes):
         if self.lang == 'EN':
-            message = '{} min. remain'.format(minutes)
+            message = 'Remain {} min'.format(minutes)
         else:
-            message = '{} мин. осталось'.format(minutes)
+            message = 'Осталось {} мин.'.format(minutes)
 
         return message
 
     def get_old_timers_message(self):
 
         if self.lang == 'EN':
-            message = 'New bunch of timers were wet. Previous timers are no longer exist.'
+            message = 'New bunch of timers were set. Previous timers are no longer exist.'
         else:
             message = 'Установлены новые таймеры. Предыдущие таймеры больше не существуют'
 
         return message
 
     def get_timers_count(self, time_periods):
+
         if len(time_periods) == 1:
             return str(time_periods[0])
 
@@ -348,6 +388,7 @@ class TimeManagerBot:
         return timers
 
     def save_settings(self):
+        """Save settings to json file"""
 
         filepath = os.path.join(os.path.dirname(os.path.abspath(os.path.abspath(__file__))), 'settings',
                                 str(self.user_id)+'.json')
@@ -365,6 +406,7 @@ class TimeManagerBot:
         return filepath
 
     def load_settings(self, filepath):
+        """Load settings for an user"""
 
         file_settings = open(filepath, 'r')
         settings = json.load(file_settings)
@@ -379,10 +421,8 @@ class TimeManagerBot:
     # Additional functions
 
     def check_is_number(self, message):
+        """Check if the message is just a number"""
+
         is_single_number = re.fullmatch(r'[0-9]+', message.strip())
 
         return is_single_number
-
-
-check = TimeManagerBot(1, 'RU')
-print(check.alarm_message)
