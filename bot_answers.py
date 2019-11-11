@@ -20,7 +20,7 @@ class TimeManagerBot:
         - lang - ['EN', 'RU'] - language for the bot
         - alarm_count - INTEGER - how many times alarm message will appear
         - alarm_message - STRING - what message to show when timer's done
-        - add_more - INTEGER - how many minutes will be added to extend current timer
+        - add_more - INTEGER - how many minutes will be added to extend the current timer
         - auto_start - BOOLEAN - is first timer starts automatically after user message, or it should be confirmed
 
         Inner variables:
@@ -129,11 +129,11 @@ class TimeManagerBot:
     def get_help_message(self):
 
         if self.lang == 'EN':
-            message = 'To start input times in minutes you want to count. For example, command 50-10-50-30 will create' \
+            message = 'To start, input times in minutes you want to count. For example, command 50-10-50-30 will create' \
                       '4 timers with 50, 10, 50 and 30 minutes. Delimiters between numbers don\'t matter.' \
-                      '\n\n/settings  command will return current settings for timers.'
+                      '\n\n/settings  command will return the current settings for timers.'
         else:
-            message = 'Чтобы начать, введи нужное количество и значение для таймеров в минутах - например, команда 50-10-30-50 ' \
+            message = 'Чтобы начать, введи нужное количество и значение для таймеров в минутах. Например, команда 50-10-30-50 ' \
                       'создаст 4 таймера по 50, 10, 30 и 50 минут.\n'\
                       '\nРазделители между цифрами значения не имеют.' \
                       '\n\nкоманда  /settings  выведет текущие настройки таймеров.'
@@ -147,7 +147,7 @@ class TimeManagerBot:
             return False
 
         if self.lang == "EN":
-            message = 'Current timer is for ' + str(next_timer) + ' minutes. Press start!'
+            message = 'The current timer is for ' + str(next_timer) + ' minutes. Press start!'
         else:
             message = 'Запускаем таймер на ' + str(next_timer) + ' минут? Жми старт!'
 
@@ -157,7 +157,7 @@ class TimeManagerBot:
 
         if len(time_periods) == 1:
             if self.lang == 'EN':
-                message = 'There will be set 1 timer for ' + str(time_periods[0]) + ' minutes'
+                message = 'There will be 1 timer set for ' + str(time_periods[0]) + ' minutes'
             else:
                 message = 'Будет установлен 1 таймер на ' + str(time_periods[0]) + ' минут'
 
@@ -166,7 +166,7 @@ class TimeManagerBot:
 
             if self.lang == 'EN':
 
-                message = 'There will be set {} timers for '.format(len(time_periods)) + timers + ' minutes'
+                message = 'There will be {} timers set for '.format(len(time_periods)) + timers + ' minutes'
             else:
                 message = 'Будут установлены таймеры ({}шт) на '.format(len(time_periods)) + timers + ' минут'
 
@@ -185,7 +185,7 @@ class TimeManagerBot:
 
         elif self.timers.extended:
             if self.lang == "EN":
-                message = 'Timer #{} was resumed for the rest {} min. To pause the timer, press the ⌛ button' \
+                message = 'Timer #{} resumed for the rest of {} min. To pause the timer, press the ⌛ button' \
                     .format(timer_number, self.timers.current_time)
             else:
                 message = 'Таймер #{} возобновлен на оставшиеся {} мин. Чтобы приостановить, жми на ⌛' \
@@ -194,7 +194,7 @@ class TimeManagerBot:
         else:
 
             if self.lang == "EN":
-                message = 'Timer #{} for {} min. is started! To pause the timer, press the ⌛ button'\
+                message = 'Timer #{} for {} min. started! To pause the timer, press the ⌛ button'\
                     .format(timer_number, self.timers.current_time)
             else:
                 message = 'Таймер #{} на {} мин. запущен. Чтобы приостановить таймер, жми на ⌛'\
@@ -215,6 +215,7 @@ class TimeManagerBot:
                 message = message = 'Таймер #{} на {} мин. завершен. Продолжаем?'.format(timer_number, self.timers.current_time)
             else:
                 message = 'Все таймеры завершены! Время отдыхать 💃'
+
         return message
 
     def get_paused_timer_message(self):
@@ -242,7 +243,7 @@ class TimeManagerBot:
     def get_confirm_message(self):
         if self.lang == 'EN':
             message = 'You\'ve extended the current timer for {} minutes. Are you sure you don\'t want to change your' \
-                      'activity?\n\nYour brain need some rest to be more productive!'.format(self.extended10*self.add_more)
+                      'activity?\n\nYour brain needs some rest to be more productive!'.format(self.extended10*self.add_more)
         else:
             message = 'Ты продлеваешь текущий таймер уже на {} минут. Не хочешь взять перерыв?' \
                       '\n\nМозгу нужен отдых, чтобы оставаться продуктивным.'.format(self.extended10*self.add_more)
@@ -252,14 +253,14 @@ class TimeManagerBot:
         if self.lang == 'EN':
             message = 'Settings: ' \
                       '\n\n/language - сменить язык. Текущий - {}' \
-                      '\n\n/alarm_count - to change how many times alarm message will appear. Current - {}' \
-                      '\n\n/alarm_message - to change current alarm message. Current - "{}"' \
-                      '\n\n/add_more - to change default value for adding more minutes to timer. Current - {} min' \
-                      '\n\n/auto_start - to start first timer automatically. Current - {}'\
+                      '\n\n/alarm_count - to change how many times an alarm message will appear. The current - {}' \
+                      '\n\n/alarm_message - to change the current alarm message. The current - "{}"' \
+                      '\n\n/add_more - to change default value for adding more minutes to timer. The current - {} min' \
+                      '\n\n/auto_start - to start first timer automatically. The current - {}'\
                 .format(self.lang, self.alarm_count, self.get_alarm_message(), self.add_more, self.auto_start)
         else:
             message = 'Настройки: ' \
-                      '\n\n/language - to change language. Current - {}' \
+                      '\n\n/language - to change language. The current - {}' \
                       '\n\n/alarm_count - задать, сколько раз будет приходить оповещение об окончании таймера. Сейчас - {}' \
                       '\n\n/alarm_message - задать текст оповещения. Сейчас - "{}"' \
                       '\n\n/add_more - задать, сколько минут будет добавляться к таймеру для продления. Сейчас - {} min' \
@@ -270,14 +271,14 @@ class TimeManagerBot:
 
     def get_updated_language_message(self):
         if self.lang == 'EN':
-            message = 'Language has been changed'
+            message = 'Language changed'
         else:
             message = 'Язык изменен'
         return message
 
     def get_set_alarm_count_message(self):
         if self.lang == 'EN':
-            message = 'Current parameter will set how many times alarm message will appeare. Current value - {}' \
+            message = 'The current parameter will set how many times an alarm message will appear. The current value - {}' \
                       '\n\nTo cancel changes input /cancel command'.format(self.alarm_count)
         else:
             message = 'Данный параметр устанавливает, сколько раз будет приходить оповещение об окончании таймера.' \
@@ -286,15 +287,15 @@ class TimeManagerBot:
 
     def get_setted_alarm_count_message(self):
         if self.lang == 'EN':
-            message = '/alarm_count parameter was changed. Current value - {}'.format(self.alarm_count)
+            message = '/alarm_count parameter was changed. The current value - {}'.format(self.alarm_count)
         else:
             message = '/alarm_count параметр был изменен. Текущее значение - {}'.format(self.alarm_count)
         return message
 
     def get_set_alarm_message_message(self):
         if self.lang == 'EN':
-            message = 'Current parameter will define a message for alarm after a timer will have finished.' \
-                      'Current value - {}.\n\nTo cancel changes input /cancel command'.format(self.alarm_message)
+            message = 'The current parameter will define a message for alarm after a timer will have finished.' \
+                      'The current value - {}.\n\nTo cancel changes input /cancel command'.format(self.alarm_message)
         else:
             message = 'Данный параметр задает текст сообщения об окончании таймера. Текущее значение - {}' \
                       '\n\nДля отмены изменений введи команду /cancel'.format(self.alarm_message)
@@ -302,15 +303,15 @@ class TimeManagerBot:
 
     def get_setted_alarm_message_message(self):
         if self.lang == 'EN':
-            message = '/alarm_message parameter was changed. Current value - {}'.format(self.alarm_message)
+            message = '/alarm_message parameter was changed. The current value - {}'.format(self.alarm_message)
         else:
             message = '/alarm_message параметр был изменен. Текущее значение - {}'.format(self.alarm_message)
         return message
 
     def get_set_add_more_message(self):
         if self.lang == 'EN':
-            message = 'Current parameter will define how many minutes will be automaticly added with \'🕝  Gimme more\' ' \
-                      'button. Current value - {}.\n\nTo cancel changes input /cancel command'.format(self.add_more)
+            message = 'The current parameter will define how many minutes will be automatically added with \'🕝  Gimme more\' ' \
+                      'button. The current value - {}.\n\nTo cancel changes input /cancel command'.format(self.add_more)
 
         else:
             message = 'Данный параметр задает, сколько минут будет добавлено при нажатии на кнопку \'🕝  Добавь еще!\'' \
@@ -319,7 +320,7 @@ class TimeManagerBot:
 
     def get_setted_add_more_message(self):
         if self.lang == 'EN':
-            message = '/add_more parameter was changed. Current value - {}'.format(self.add_more)
+            message = '/add_more parameter was changed. The current value - {}'.format(self.add_more)
         else:
             message = '/add_more параметр был изменен. Текущее значение - {}'.format(self.add_more)
         return message
@@ -328,7 +329,7 @@ class TimeManagerBot:
 
         if self.lang == 'EN':
             if self.auto_start:
-                message = 'First timer starts automatically'
+                message = 'The first timer starts automatically'
             else:
                 message = 'All timers have to be started manually'
         else:
@@ -341,7 +342,7 @@ class TimeManagerBot:
 
     def get_cancel_message(self):
         if self.lang == 'EN':
-            message = 'Сhanges have been canceled'
+            message = 'Сhanges canceled'
         else:
             message = 'Изменения отменены'
         return message
@@ -366,7 +367,7 @@ class TimeManagerBot:
     def get_old_timers_message(self):
 
         if self.lang == 'EN':
-            message = 'New bunch of timers were set. Previous timers are no longer exist.'
+            message = 'The new bunch of timers was set. Previous timers are no longer exist.'
         else:
             message = 'Установлены новые таймеры. Предыдущие таймеры больше не существуют'
 

@@ -60,7 +60,7 @@ def get_keyboard_buttons(status, language, chat_id=None):
             text2 = '⏩ Next'
             callback_data2 = 'next'
 
-        text3 = '❓ How much left ❓'
+        text3 = '❓ How much left?'
     else:
         if status == 'start':
             text1 = '▶  Старт'
@@ -82,7 +82,7 @@ def get_keyboard_buttons(status, language, chat_id=None):
             text2 = '⏩ Дальше'
             callback_data2 = 'next'
 
-        text3 = '❓ Сколько осталось ❓'
+        text3 = '❓ Сколько осталось?'
 
 
     control_buttons = [[InlineKeyboardButton(text1, callback_data=callback_data1),
@@ -338,7 +338,7 @@ def start_timer(bot, chat_id, message_id, extended=False):
 
 
 def pause_timer(bot, chat_id, message_id):
-   "Pause timer and save remain time"
+    "Pause timer and save remain time"
 
     bot_collection[chat_id].timers.current_timer.cancel()
 
