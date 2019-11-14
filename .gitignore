@@ -1,0 +1,6 @@
+.idea
+.env
+venv
+TODO.txt
+__pycache__/
+settings/
