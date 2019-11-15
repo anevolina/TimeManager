@@ -312,7 +312,7 @@ def callback_answer(bot, update):
 
 
 def start_bot(user_id, lang, bot, message_id):
-    "Start bot and add it into collection"
+    """Start bot and add it into collection"""
 
 
     bot_collection[user_id] = TimeManagerBot(user_id, lang)
@@ -323,7 +323,7 @@ def start_bot(user_id, lang, bot, message_id):
 
 
 def start_timer(bot, chat_id, message_id, extended=False):
-    "Start every new timer. If previous timer was paused, started for the remain amount of time"
+    """ Start every new timer. If previous timer was paused, started for the remain amount of time"""
 
     next_func = update_timer(bot, chat_id, message_id)
     result = bot_collection[chat_id].start_timer(next_func)
@@ -340,7 +340,7 @@ def start_timer(bot, chat_id, message_id, extended=False):
 
 
 def pause_timer(bot, chat_id, message_id):
-    "Pause timer and save remain time"
+    """ Pause timer and save remain time"""
 
     bot_collection[chat_id].timers.current_timer.cancel()
 
@@ -357,7 +357,7 @@ def pause_timer(bot, chat_id, message_id):
 
 
 def next_timer(bot, chat_id, message_id):
-    "Set to zero all additional settings, and start next timer"
+    """Set to zero all additional settings, and start next timer"""
 
     bot_collection[chat_id].timers.current_timer.cancel()
     bot_settings_set_nul(chat_id)
@@ -366,7 +366,7 @@ def next_timer(bot, chat_id, message_id):
 
 
 def add_more_timer(bot, chat_id, message_id, confirm=False):
-    "Ask to confirm every extension after 3 times in a row"
+    """ Ask to confirm every extension after 3 times in a row"""
 
     if bot_collection[chat_id].extended10 >= 3 and not confirm:
         message = bot_collection[chat_id].get_confirm_message()
@@ -383,7 +383,7 @@ def add_more_timer(bot, chat_id, message_id, confirm=False):
 
 
 def check_status(bot, chat_id, query):
-    "Check how many minutes remain for current timer"
+    """Check how many minutes remain for current timer"""
 
     remain = remain_time(chat_id)
     query_id = query.id
@@ -396,7 +396,7 @@ def check_status(bot, chat_id, query):
 
 
 def set_old_timers_message(bot, chat_id, message_id):
-    "Delete buttons for the last set of timers"
+    """ Delete buttons for the last set of timers"""
 
     message = bot_collection[chat_id].get_old_timers_message()
 
@@ -404,7 +404,7 @@ def set_old_timers_message(bot, chat_id, message_id):
 
 
 def bot_settings_set_nul(chat_id):
-    "Set to null additional settings for a timer"
+    """Set to null additional settings for a timer"""
 
     bot_collection[chat_id].timers.extended = 0
     bot_collection[chat_id].timers.additional_time = False
@@ -412,7 +412,8 @@ def bot_settings_set_nul(chat_id):
 
 
 def update_timer(bot, user_id, message_id):
-    "Function called after finishing every timer"
+    """Function called after finishing every timer"""
+
     def finish_timer():
         keyboard_buttons = get_keyboard_buttons('extend', bot_collection[user_id].lang, user_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
@@ -428,7 +429,7 @@ def update_timer(bot, user_id, message_id):
 
 
 def alarm_message(bot, user_id):
-    "Function to send and delete messages like alarm"
+    """Function to send and delete messages like alarm"""
 
     def ring_alarm():
 
@@ -445,28 +446,15 @@ def alarm_message(bot, user_id):
 
 
 def convert_time(time_passed):
-    "Converting delta datetime to minutes"
+    """Converting delta datetime to minutes"""
+
     minutes = time_passed.seconds // 60
 
     return minutes
 
 
 def try_load(user_id):
-    "Try to load settings for current user"
-
-    # dir_name = os.getcwd()
-    #
-    # filepath = os.path.join(dir_name, 'settings', str(user_id) + '.json')
-    #
-    # file_exist = os.path.exists(filepath)
-    #
-    # if file_exist:
-    #     bot_collection[user_id] = TimeManagerBot(user_id, 'EN')
-    #     bot_collection[user_id].load_settings(filepath)
-    #
-    #     return True
-    #
-    # return False
+    """Try to load settings for current user"""
 
     settings = redis.Redis(db=1)
 
@@ -480,7 +468,7 @@ def try_load(user_id):
 
 
 def remain_time(chat_id):
-    "Return how many time left for current timer"
+    """Return how many time left for current timer"""
 
     if bot_collection[chat_id].paused:
         return bot_collection[chat_id].timers.extended
@@ -493,7 +481,7 @@ def remain_time(chat_id):
     return remain if remain > 0 else 0
 
 def repeat_timers(bot, chat_id, message_id):
-    "Repeat whole bunch of the last timers"
+    """Repeat whole bunch of the last timers"""
 
     bot_collection[chat_id].timers.repeat()
     start_timer(bot, chat_id, message_id)
@@ -532,5 +520,3 @@ dispatcher.add_handler(message_handler)
 
 # and start the bot...
 updater.start_polling()
-
-try_load(37163275)
