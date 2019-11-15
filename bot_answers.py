@@ -25,7 +25,7 @@ class TimeManagerBot:
 
         Inner variables:
         - last_timer_start - DATETIME - in what time the last timer was start
-        - extended10 - INTEGER - how many times the last timer was extended
+        - how_many_extended - INTEGER - how many times the last timer was extended
         - message_id - TLGR_VARIABLE - in which message id the current timer updates
         - paused - is the current timer paused
         """
@@ -44,7 +44,7 @@ class TimeManagerBot:
 
         # Additional variables, just for inner use
         self.last_timer_start = 0
-        self.extended10 = 0
+        self.how_many_extended = 0
         self.message_id = 0
         self.paused = False
 
@@ -121,7 +121,7 @@ class TimeManagerBot:
         self.timers.clear()
 
         self.last_timer_start = 0
-        self.extended10 = 0
+        self.how_many_extended = 0
         self.message_id = 0
 
     # generate messages for bot answers
@@ -243,10 +243,10 @@ class TimeManagerBot:
     def get_confirm_message(self):
         if self.lang == 'EN':
             message = 'You\'ve extended the current timer for {} minutes. Are you sure you don\'t want to change your' \
-                      'activity?\n\nYour brain needs some rest to be more productive!'.format(self.extended10*self.add_more)
+                      'activity?\n\nYour brain needs some rest to be more productive!'.format(self.how_many_extended * self.add_more)
         else:
             message = 'Ты продлеваешь текущий таймер уже на {} минут. Не хочешь взять перерыв?' \
-                      '\n\nМозгу нужен отдых, чтобы оставаться продуктивным.'.format(self.extended10*self.add_more)
+                      '\n\nМозгу нужен отдых, чтобы оставаться продуктивным.'.format(self.how_many_extended * self.add_more)
         return message
 
     def get_settings_message(self):
