@@ -1,15 +1,15 @@
 from timers_bunch import TimersBunch
 from datetime import datetime
 import re
-import os
-import json
-
+import redis
 
 class TimeManagerBot:
     """
     Define answers to user actions according to language settings,
     and reaction to callback messages
     """
+
+    settings = redis.Redis(db=1)
 
     def __init__(self, user_id, lang='EN'):
         """
@@ -105,7 +105,7 @@ class TimeManagerBot:
             else:
                 bot_message = self.get_wrong_format_message('add_more')
 
-        self.save_settings()
+        self.save_settings(set_update)
 
         return bot_message
 
@@ -295,10 +295,10 @@ class TimeManagerBot:
     def get_set_alarm_message_message(self):
         if self.lang == 'EN':
             message = 'The current parameter will define a message for alarm after a timer will have finished.' \
-                      'The current value - {}.\n\nTo cancel changes input /cancel command'.format(self.alarm_message)
+                      'The current value - {}.\n\nTo cancel changes input /cancel command'.format(self.get_alarm_message())
         else:
             message = 'Данный параметр задает текст сообщения об окончании таймера. Текущее значение - {}' \
-                      '\n\nДля отмены изменений введи команду /cancel'.format(self.alarm_message)
+                      '\n\nДля отмены изменений введи команду /cancel'.format(self.get_alarm_message())
         return message
 
     def get_setted_alarm_message_message(self):
@@ -388,35 +388,34 @@ class TimeManagerBot:
 
         return timers
 
-    def save_settings(self):
-        """Save settings to json file"""
+    def save_settings(self, set_update):
+        """Save settings to redis db"""
 
-        filepath = os.path.join(os.path.dirname(os.path.abspath(os.path.abspath(__file__))), 'settings',
-                                str(self.user_id)+'.json')
-        settings = {
-            'lang': self.lang,
-            'alarm_count': self.alarm_count,
-            'alarm_message': self.alarm_message,
-            'add_more': self.add_more,
-            'auto_start': self.auto_start
-        }
+        if set_update == 'lang' or set_update == 'ALL':
+            self.settings.hset(self.user_id, 'lang', self.lang)
 
-        file_settings = open(filepath, 'w')
-        json.dump(settings, file_settings)
+        if set_update == 'alarm_count' or set_update == 'ALL':
+            self.settings.hset(self.user_id, 'alarm_count', self.alarm_count)
 
-        return filepath
+        if set_update == 'alarm_message' or set_update == 'ALL':
+            self.settings.hset(self.user_id, 'alarm_message', self.alarm_message)
 
-    def load_settings(self, filepath):
+        if set_update == 'add_more' or set_update == 'ALL':
+            self.settings.hset(self.user_id, 'add_more', self.add_more)
+
+        if set_update == 'auto_start' or set_update == 'ALL':
+            self.settings.hset(self.user_id, 'auto_start', int(self.auto_start))
+
+        return
+
+    def load_settings(self):
         """Load settings for an user"""
 
-        file_settings = open(filepath, 'r')
-        settings = json.load(file_settings)
-
-        self.lang = settings['lang']
-        self.alarm_count = settings['alarm_count']
-        self.alarm_message = settings['alarm_message']
-        self.add_more = settings['add_more']
-        self.auto_start = settings['auto_start']
+        self.lang = self.settings.hget(self.user_id, 'lang').decode()
+        self.alarm_count = int(self.settings.hget(self.user_id, 'alarm_count'))
+        self.alarm_message = self.settings.hget(self.user_id, 'alarm_message').decode()
+        self.add_more = int(self.settings.hget(self.user_id, 'add_more'))
+        self.auto_start = bool(self.settings.hget(self.user_id, 'auto_start'))
 
 
     # Additional functions

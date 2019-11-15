@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 from dotenv import load_dotenv
@@ -7,6 +8,7 @@ from bot_answers import TimeManagerBot
 import time
 import threading
 from datetime import datetime
+import redis
 
 # ----------------------------------------------
 # Initializing
@@ -315,7 +317,7 @@ def start_bot(user_id, lang, bot, message_id):
 
     bot_collection[user_id] = TimeManagerBot(user_id, lang)
     message = bot_collection[user_id].get_help_message()
-    bot_collection[user_id].save_settings()
+    bot_collection[user_id].save_settings(set_update='ALL')
 
     bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
 
@@ -452,19 +454,29 @@ def convert_time(time_passed):
 def try_load(user_id):
     "Try to load settings for current user"
 
-    dir_name = os.getcwd()
+    # dir_name = os.getcwd()
+    #
+    # filepath = os.path.join(dir_name, 'settings', str(user_id) + '.json')
+    #
+    # file_exist = os.path.exists(filepath)
+    #
+    # if file_exist:
+    #     bot_collection[user_id] = TimeManagerBot(user_id, 'EN')
+    #     bot_collection[user_id].load_settings(filepath)
+    #
+    #     return True
+    #
+    # return False
 
-    filepath = os.path.join(dir_name, 'settings', str(user_id) + '.json')
+    settings = redis.Redis(db=1)
 
-    file_exist = os.path.exists(filepath)
-
-    if file_exist:
+    if str(user_id).encode() in settings.keys():
         bot_collection[user_id] = TimeManagerBot(user_id, 'EN')
-        bot_collection[user_id].load_settings(filepath)
-
+        bot_collection[user_id].load_settings()
         return True
 
     return False
+
 
 
 def remain_time(chat_id):
@@ -520,3 +532,5 @@ dispatcher.add_handler(message_handler)
 
 # and start the bot...
 updater.start_polling()
+
+try_load(37163275)
