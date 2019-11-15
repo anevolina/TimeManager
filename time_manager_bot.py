@@ -27,6 +27,9 @@ dispatcher = updater.dispatcher
 bot_collection = {}
 settings_update = {}
 
+#Initialize database for timers settings
+timers_settings = redis.Redis(db=2)
+
 # Choose language buttons
 lang_buttons = [[InlineKeyboardButton("Русский", callback_data='RU'),
                 InlineKeyboardButton("English", callback_data='EN')]]
@@ -330,13 +333,15 @@ def start_timer(bot, chat_id, message_id, extended=False):
     bot_collection[chat_id].paused = False
 
     if not extended:
-        bot_collection[chat_id].extended10 = 0
+        bot_collection[chat_id].how_many_extended = 0
 
     if result:
         keyboard_buttons = get_keyboard_buttons('pause', bot_collection[chat_id].lang, chat_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
         message = bot_collection[chat_id].get_started_timer_message()
         bot.edit_message_text(text=message, chat_id=chat_id, message_id=message_id, reply_markup=reply_markup)
+
+    save_timers(chat_id)
 
 
 def pause_timer(bot, chat_id, message_id):
@@ -355,6 +360,8 @@ def pause_timer(bot, chat_id, message_id):
 
     bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message, reply_markup=reply_markup)
 
+    save_timers(chat_id)
+
 
 def next_timer(bot, chat_id, message_id):
     """Set to zero all additional settings, and start next timer"""
@@ -368,7 +375,7 @@ def next_timer(bot, chat_id, message_id):
 def add_more_timer(bot, chat_id, message_id, confirm=False):
     """ Ask to confirm every extension after 3 times in a row"""
 
-    if bot_collection[chat_id].extended10 >= 3 and not confirm:
+    if bot_collection[chat_id].how_many_extended >= 3 and not confirm:
         message = bot_collection[chat_id].get_confirm_message()
         keyboard_buttons = get_keyboard_buttons('10confirm', bot_collection[chat_id].lang, chat_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
@@ -376,7 +383,7 @@ def add_more_timer(bot, chat_id, message_id, confirm=False):
         bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=message, reply_markup=reply_markup)
 
     else:
-        bot_collection[chat_id].extended10 += 1
+        bot_collection[chat_id].how_many_extended += 1
         bot_collection[chat_id].timers.extended = bot_collection[chat_id].add_more
         bot_collection[chat_id].timers.additional_time = True
         start_timer(bot, chat_id, message_id, extended=True)
@@ -409,6 +416,8 @@ def bot_settings_set_nul(chat_id):
     bot_collection[chat_id].timers.extended = 0
     bot_collection[chat_id].timers.additional_time = False
     bot_collection[chat_id].paused = False
+
+    save_timers(chat_id)
 
 
 def update_timer(bot, user_id, message_id):
@@ -487,6 +496,29 @@ def repeat_timers(bot, chat_id, message_id):
     start_timer(bot, chat_id, message_id)
 
 
+def save_timers(user_id):
+    """Save current timers settings for a user"""
+
+    timers_settings.hmset(user_id, {
+        'last_timer_start': bot_collection[user_id].last_timer_start.isoformat(),
+        'message_id': bot_collection[user_id].message_id,
+        'how_many_extended': bot_collection[user_id].how_many_extended,
+        'paused': int(bot_collection[user_id].paused),
+
+        'scheduled_bunch': '-'.join([str(i) for i in list(bot_collection[user_id].timers.scheduled_bunch)]),
+        'extended': bot_collection[user_id].timers.extended,
+        'additional_time': int(bot_collection[user_id].timers.additional_time),
+        'prev_bunch': '-'.join([str(i) for i in list(bot_collection[user_id].timers.prev_bunch)]),
+        'current_time': bot_collection[user_id].timers.current_time
+
+    })
+
+
+
+def load_timers():
+    """load all timers for current users"""
+
+
 # define command handlers
 start_handler = CommandHandler("start", start_callback)
 help_handler = CommandHandler("help", help_callback)
@@ -520,3 +552,4 @@ dispatcher.add_handler(message_handler)
 
 # and start the bot...
 updater.start_polling()
+
