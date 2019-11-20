@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
-from dotenv import load_dotenv
 import os
-from os.path import join, dirname
-from bot_answers import TimeManagerBot
+import redis
 import time
 import threading
-from datetime import datetime
-import redis
+
+from dotenv import load_dotenv
+from os.path import join, dirname
+from bot_answers import TimeManagerBot
+from datetime import datetime, timedelta
+from collections import deque
+
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 
 # ----------------------------------------------
 # Initializing
@@ -415,6 +419,7 @@ def bot_settings_set_nul(chat_id):
 
     bot_collection[chat_id].timers.extended = 0
     bot_collection[chat_id].timers.additional_time = False
+    bot_collection[chat_id].timers.current_time = 0
     bot_collection[chat_id].paused = False
 
     save_timers(chat_id)
@@ -427,7 +432,12 @@ def update_timer(bot, user_id, message_id):
         keyboard_buttons = get_keyboard_buttons('extend', bot_collection[user_id].lang, user_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
         message = bot_collection[user_id].get_finished_timer_message()
-        bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id, reply_markup=reply_markup)
+
+        try:
+            bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id, reply_markup=reply_markup)
+        except:
+            pass
+
         bot_settings_set_nul(user_id)
 
         alarm = alarm_message(bot, user_id)
@@ -506,17 +516,73 @@ def save_timers(user_id):
         'paused': int(bot_collection[user_id].paused),
 
         'scheduled_bunch': '-'.join([str(i) for i in list(bot_collection[user_id].timers.scheduled_bunch)]),
+        'prev_bunch': '-'.join([str(i) for i in list(bot_collection[user_id].timers.prev_bunch)]),
+
         'extended': bot_collection[user_id].timers.extended,
         'additional_time': int(bot_collection[user_id].timers.additional_time),
-        'prev_bunch': '-'.join([str(i) for i in list(bot_collection[user_id].timers.prev_bunch)]),
         'current_time': bot_collection[user_id].timers.current_time
 
     })
 
 
 
-def load_timers():
+def load_timers(bot):
     """load all timers for current users"""
+
+    all_users = timers_settings.keys('*')
+
+    for user in all_users:
+        user_id = int(user)
+
+        current_timer_minutes = int(timers_settings.hget(user_id, 'current_time').decode())
+        scheduled_bunch = timers_settings.hget(user_id, 'scheduled_bunch').decode()
+        message_id = int(timers_settings.hget(user_id, 'message_id').decode())
+
+        if current_timer_minutes == 0 and not scheduled_bunch:
+            message = 'Current timers were turned off due to inactivity\n\n' \
+                      'Текущие таймеры были отключены в связи с неактивностью'
+
+            bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
+
+            continue
+
+        bot_collection[user_id] = TimeManagerBot(user_id, 'EN')
+        bot_collection[user_id].load_settings()
+
+        bot_collection[user_id].message_id = message_id
+        bot_collection[user_id].paused = bool(int(timers_settings.hget(user_id, 'paused').decode()))
+        bot_collection[user_id].timers.additional_time = bool(int(timers_settings.hget(user_id, 'additional_time').decode()))
+        bot_collection[user_id].how_many_extended = int(timers_settings.hget(user_id, 'how_many_extended').decode())
+        bot_collection[user_id].timers.extended = int(timers_settings.hget(user_id, 'extended').decode())
+
+
+        if scheduled_bunch:
+            bot_collection[user_id].timers.scheduled_bunch = deque([int(i) for i in scheduled_bunch.split('-')])
+
+        prev_bunch = timers_settings.hget(user_id, 'prev_bunch').decode()
+
+        if prev_bunch:
+            bot_collection[user_id].timers.prev_bunch = deque([int(i) for i in prev_bunch.split('-')])
+
+        if current_timer_minutes and not bot_collection[user_id].paused:
+            last_timer_start = datetime.fromisoformat(timers_settings.hget(user_id, 'last_timer_start').decode())
+            bot_collection[user_id].last_timer_start = last_timer_start
+
+            last_timer_end = last_timer_start + timedelta(minutes=int(current_timer_minutes))
+            current_time = datetime.now()
+
+            remain_time = last_timer_end - current_time
+            remain_minutes = convert_time(remain_time)
+
+            if remain_time.days < 0 or  remain_minutes == 0:
+                # Change message, ring alarm
+                bot_collection[user_id].timers.current_time = current_timer_minutes
+                update_timer(bot, user_id, message_id)()
+
+            else:
+                # Start timer with remain time
+                bot_collection[user_id].timers.extended = remain_minutes
+                start_timer(bot, user_id, message_id)
 
 
 # define command handlers
@@ -553,3 +619,4 @@ dispatcher.add_handler(message_handler)
 # and start the bot...
 updater.start_polling()
 
+load_timers(updater.bot)

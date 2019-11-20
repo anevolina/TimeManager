@@ -184,6 +184,8 @@ class TimeManagerBot:
                     .format(timer_number, self.timers.current_time)
 
         elif self.timers.extended:
+            self.timers.extended = 0
+
             if self.lang == "EN":
                 message = 'Timer #{} resumed for the rest of {} min. To pause the timer, press the ⌛ button' \
                     .format(timer_number, self.timers.current_time)
