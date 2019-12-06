@@ -3,6 +3,8 @@ from datetime import datetime
 import re
 import redis
 
+from single_timer import start_single_timer, check_single_timer
+
 class TimeManagerBot:
     """
     Define answers to user actions according to language settings,
@@ -48,8 +50,11 @@ class TimeManagerBot:
         self.message_id = 0
         self.paused = False
 
-    def check_user_message(self, message, settings_update, user_id):
+    def check_user_message(self, bot, update, settings_update):
         """Define reaction to user input - set timers or change settings"""
+
+        message = update.message.text.strip()
+        user_id = update.message.from_user.id
 
         timer_on = False
         bot_message = 'Something went wrong'
@@ -63,13 +68,20 @@ class TimeManagerBot:
             time_periods = self.timers.get_time_periods(message)
 
             if len(time_periods) > 0:
+                is_single_timer = check_single_timer(message)
 
-                prev_message = self.message_id
+                if is_single_timer:
+                    start_single_timer(bot, self.lang, self.alarm_count, user_id, is_single_timer)
+                    bot_message = ''
 
-                self.refresh_timers()
-                self.timers.set_current_timers_bunch(time_periods)
-                bot_message = self.get_init_timers_message(time_periods)
-                timer_on = True
+                else:
+
+                    prev_message = self.message_id
+
+                    self.refresh_timers()
+                    self.timers.set_current_timers_bunch(time_periods)
+                    bot_message = self.get_init_timers_message(time_periods)
+                    timer_on = True
         else:
             bot_message = self.set_settings(user_id, message, settings_update, set_update)
 
@@ -428,3 +440,5 @@ class TimeManagerBot:
         is_single_number = re.fullmatch(r'[0-9]+', message.strip())
 
         return is_single_number
+
+

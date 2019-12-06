@@ -14,6 +14,8 @@ from collections import deque
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 
+from single_timer import start_single_timer
+
 # ----------------------------------------------
 # Initializing
 # ----------------------------------------------
@@ -246,9 +248,7 @@ def message_answer(bot, update):
             start_callback(bot, update)
             return
 
-    user_message = update.message.text.strip()
-
-    bot_message, timer_on, prev_message = bot_collection[user_id].check_user_message(user_message, settings_update, user_id)
+    bot_message, timer_on, prev_message = bot_collection[user_id].check_user_message(bot, update, settings_update)
 
     if not bot_message:
         return
@@ -504,6 +504,9 @@ def repeat_timers(bot, chat_id, message_id):
 
     bot_collection[chat_id].timers.repeat()
     start_timer(bot, chat_id, message_id)
+
+
+
 
 
 def save_timers(user_id):
