@@ -15,7 +15,7 @@ def start_single_timer(bot, lang, count, user_id, attrs):
     minutes = int(attrs[0][0])
     message = ' '. join(attrs[1])
 
-    key = save_backup(user_id, minutes, message, count, lang)
+    key = save_backup(user_id, minutes, message, count)
     start_timer(bot, message, user_id, count, key, minutes)
 
     send_confirmation(bot, user_id, lang, minutes)
