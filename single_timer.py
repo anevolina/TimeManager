@@ -6,7 +6,7 @@ import re
 import redis
 import threading
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 backup = redis.Redis(db=3)
 
@@ -15,17 +15,19 @@ def start_single_timer(bot, lang, count, user_id, attrs):
     minutes = int(attrs[0][0])
     message = ' '. join(attrs[1])
 
-    alarm_message = send_alarm_message(bot, message, user_id, count)
-
-    save_backup(user_id, minutes, message)
-
-    threading.Timer(minutes*60, alarm_message).start()
+    key = save_backup(user_id, minutes, message, count, lang)
+    start_timer(bot, message, user_id, count, key, minutes)
 
     send_confirmation(bot, user_id, lang, minutes)
 
     pass
 
-def send_alarm_message(bot, message, user_id, count):
+def start_timer(bot, message, user_id, count, key, minutes):
+    alarm_message = send_alarm_message(bot, message, user_id, count, key)
+    threading.Timer(minutes * 60, alarm_message).start()
+
+
+def send_alarm_message(bot, message, user_id, count, key):
     def send_alarm():
 
         bot_message = bot.send_message(chat_id=user_id, text=message)
@@ -33,6 +35,8 @@ def send_alarm_message(bot, message, user_id, count):
         for i in range(count):
             bot.delete_message(chat_id=user_id, message_id=bot_message.message_id)
             bot_message = bot.send_message(chat_id=user_id, text=message)
+
+        delete_backup(key)
 
     return send_alarm
 
@@ -43,6 +47,9 @@ def delete_message(bot, user_id, message_id):
 
     return del_msg
 
+def delete_backup(key):
+
+    backup.delete(key)
 
 
 def send_confirmation(bot, user_id, lang, minutes):
@@ -73,6 +80,39 @@ def check_single_timer(user_message):
 
     return False
 
-def save_backup(user_id, minutes, message):
+def save_backup(user_id, minutes, message, count):
 
     current_time = datetime.now()
+
+    key = str(user_id) + '@' + current_time.isoformat()
+
+    backup.hmset(key, {
+        'minutes': minutes,
+        'message': message,
+        'count': count
+    })
+
+    return key
+
+def load_backup(bot):
+
+    all_keys = backup.keys('*')
+
+    for key in all_keys:
+
+        user_id, timer_start = (key.decode()).split('@')
+        timer_start = datetime.fromisoformat(timer_start)
+
+        minutes = int(backup.hget(key, 'minutes'))
+        message = backup.hget(key, 'message').decode()
+        count = int(backup.hget(key, 'count'))
+
+        timer_end = timer_start + timedelta(minutes=minutes)
+        current_time = datetime.now()
+        remain_time = timer_end - current_time
+
+        if remain_time.days < 0:
+            start_timer(bot, message, user_id, count, key, 0)
+
+        else:
+            start_timer(bot, message, user_id, count, key, remain_time.seconds/60)

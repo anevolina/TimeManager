@@ -14,7 +14,7 @@ from collections import deque
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 
-from single_timer import start_single_timer
+from single_timer import load_backup as load_single_timers
 
 # ----------------------------------------------
 # Initializing
@@ -531,6 +531,8 @@ def save_timers(user_id):
 
 def load_timers(bot):
     """load all timers for current users"""
+
+    load_single_timers(bot)
 
     all_users = timers_settings.keys('*')
 
