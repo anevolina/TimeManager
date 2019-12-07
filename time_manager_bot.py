@@ -15,6 +15,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 
 from single_timer import load_backup as load_single_timers
+from notificator import send_update_notification
 
 # ----------------------------------------------
 # Initializing
@@ -126,6 +127,7 @@ def help_callback(bot, update):
             return
 
     message = bot_collection[user_id].get_help_message()
+
     bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -148,7 +150,7 @@ def settings_callback(bot, update):
 def language_callback(bot, update):
     user_id = update.message.from_user.id
 
-    settings_update[user_id] = 'language'
+    settings_update[user_id] = 'lang'
     start_callback(bot, update)
 
 
@@ -285,6 +287,7 @@ def callback_answer(bot, update):
         if set_update:
             assert bot_collection[chat_id], "Houston we've got a problem"
             bot_collection[chat_id].lang = query.data
+            bot_collection[chat_id].save_settings(set_update)
             message = bot_collection[chat_id].get_updated_language_message()
             bot.edit_message_text(text=message, chat_id=chat_id, message_id=message_id)
             settings_update.pop(chat_id)
@@ -506,9 +509,6 @@ def repeat_timers(bot, chat_id, message_id):
     start_timer(bot, chat_id, message_id)
 
 
-
-
-
 def save_timers(user_id):
     """Save current timers settings for a user"""
 
@@ -548,6 +548,7 @@ def load_timers(bot):
                       'Текущие таймеры были отключены в связи с неактивностью'
 
             bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
+            timers_settings.delete(user)
 
             continue
 
@@ -625,3 +626,5 @@ dispatcher.add_handler(message_handler)
 updater.start_polling()
 
 load_timers(updater.bot)
+
+send_update_notification(updater.bot, 1)
