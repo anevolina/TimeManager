@@ -139,16 +139,25 @@ class TimeManagerBot:
     # generate messages for bot answers
 
     def get_help_message(self):
-
         if self.lang == 'EN':
-            message = 'To start, input times in minutes you want to count. For example, command 50-10-50-30 will create' \
+            message = 'To start, input times in minutes you want to count. For example, command 50-10-50-30 will create ' \
                       '4 timers with 50, 10, 50 and 30 minutes. Delimiters between numbers don\'t matter.' \
-                      '\n\n/settings  command will return the current settings for timers.'
+                      '\n\n/settings  command will return the current settings for timers.' \
+                      '\n\n ---------- ' \
+                      '\n\n❗ New feature! Simple timer-reminder - all I need is a number of minutes and a message! ' \
+                      'Give me a message like - *"10 Call mom"* -, and after 10 minutes ' \
+                      'I\'ll send you the message - *"Call mom"*.'
         else:
             message = 'Чтобы начать, введи нужное количество и значение для таймеров в минутах. Например, команда 50-10-30-50 ' \
                       'создаст 4 таймера по 50, 10, 30 и 50 минут.\n'\
                       '\nРазделители между цифрами значения не имеют.' \
-                      '\n\nкоманда  /settings  выведет текущие настройки таймеров.'
+                      '\n\nкоманда  /settings  выведет текущие настройки таймеров.' \
+                      '\n\n ----------'\
+                      '\n\n❗ Новая плюшка - таймер-напоминалка - одиночный таймер без остановки,' \
+                      'продления, повторения и т.д. - просто введи количество минут, и сообщение, которое нужно прислать.' \
+                      '\n\nНапример, сообщение *"10 Позвонить маме"*  запустит таймер на 10 минут, и по окончанию выдаст сообщение ' \
+                      '- *"Позвонить маме"*'
+
 
         return message
 

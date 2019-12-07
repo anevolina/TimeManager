@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from collections import deque
 
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 
 from single_timer import load_backup as load_single_timers
@@ -126,7 +126,7 @@ def help_callback(bot, update):
             return
 
     message = bot_collection[user_id].get_help_message()
-    bot.send_message(chat_id=update.message.chat_id, text=message)
+    bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 
 # define reaction to /settings command in tlgr

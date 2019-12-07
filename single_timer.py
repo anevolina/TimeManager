@@ -63,7 +63,7 @@ def send_confirmation(bot, user_id, lang, minutes):
 
     del_msg = delete_message(bot, user_id, message_id)
 
-    threading.Timer(60, del_msg).start()
+    threading.Timer(5, del_msg).start()
 
 
 
