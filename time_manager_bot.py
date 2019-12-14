@@ -133,21 +133,18 @@ def help_callback(bot, update):
 
 # define reaction to /settings command in tlgr
 def settings_callback(bot, update):
-    user_id = update.message.from_user.id
 
-    if user_id not in bot_collection:
-        existed = try_load(user_id)
+    user_id = check_user(bot, update)
 
-        if not existed:
-            start_callback(bot, update)
-            return
+    if user_id:
 
-    message = bot_collection[user_id].get_settings_message()
-    bot.send_message(chat_id=update.message.chat_id, text=message)
+        message = bot_collection[user_id].get_settings_message()
+        bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
 # define reaction to /language command in tlgr
 def language_callback(bot, update):
+
     user_id = update.message.from_user.id
 
     settings_update[user_id] = 'lang'
@@ -156,83 +153,61 @@ def language_callback(bot, update):
 
 # define reaction to /alarm_count command in tlgr
 def alarm_count_callback(bot, update):
-    user_id = update.message.from_user.id
 
-    if user_id not in bot_collection:
-        existed = try_load(user_id)
+    user_id = check_user(bot, update)
 
-        if not existed:
-            start_callback(bot, update)
-            return
+    if user_id:
 
-    settings_update[user_id] = 'alarm_count'
-    message = bot_collection[user_id].get_set_alarm_count_message()
-    bot.send_message(chat_id=user_id, text=message)
+        settings_update[user_id] = 'alarm_count'
+        message = bot_collection[user_id].get_set_alarm_count_message()
+        bot.send_message(chat_id=user_id, text=message)
 
 
 # define reaction to /alarm_message command in tlgr
 def alarm_message_callback(bot, update):
-    user_id = update.message.from_user.id
 
-    if user_id not in bot_collection:
-        existed = try_load(user_id)
+    user_id = check_user(bot, update)
 
-        if not existed:
-            start_callback(bot, update)
-            return
+    if user_id:
 
-    settings_update[user_id] = 'alarm_message'
-    message = bot_collection[user_id].get_set_alarm_message_message()
-    bot.send_message(chat_id=user_id, text=message)
+        settings_update[user_id] = 'alarm_message'
+        message = bot_collection[user_id].get_set_alarm_message_message()
+        bot.send_message(chat_id=user_id, text=message)
 
 
 # define reaction to /add_more command in tlgr
 def add_more_callback(bot, update):
-    user_id = update.message.from_user.id
+    user_id = check_user(bot, update)
 
-    if user_id not in bot_collection:
-        existed = try_load(user_id)
+    if user_id:
 
-        if not existed:
-            start_callback(bot, update)
-            return
-
-    settings_update[user_id] = 'add_more'
-    message = bot_collection[user_id].get_set_add_more_message()
-    bot.send_message(chat_id=user_id, text=message)
+        settings_update[user_id] = 'add_more'
+        message = bot_collection[user_id].get_set_add_more_message()
+        bot.send_message(chat_id=user_id, text=message)
 
 
 # define reaction to /cancel command in tlgr
 def cancel_callback(bot, update):
-    user_id = update.message.from_user.id
 
-    if user_id not in bot_collection:
-        existed = try_load(user_id)
+    user_id = check_user(bot, update)
 
-        if not existed:
-            start_callback(bot, update)
-            return
-
-    settings_update.pop(user_id)
-    message = bot_collection[user_id].get_cancel_message()
-    bot.send_message(chat_id=user_id, text=message)
+    if user_id:
+        settings_update.pop(user_id)
+        message = bot_collection[user_id].get_cancel_message()
+        bot.send_message(chat_id=user_id, text=message)
 
 
 # define reaction to /auto_start command in tlgr
 def auto_start_callback(bot, update):
-    user_id = update.message.from_user.id
+    user_id = check_user(bot, update)
 
-    if user_id not in bot_collection:
-        existed = try_load(user_id)
+    if user_id:
 
-        if not existed:
-            start_callback(bot, update)
-            return
+        bot_collection[user_id].auto_start = not bot_collection[user_id].auto_start
 
-    bot_collection[user_id].auto_start = not bot_collection[user_id].auto_start
+        message = bot_collection[user_id].get_set_auto_start_message()
+        bot.send_message(chat_id=user_id, text=message)
 
-    message = bot_collection[user_id].get_set_auto_start_message()
-    bot.send_message(chat_id=user_id, text=message)
 
 # ----------------------------------------------
 # reaction for simple message
@@ -240,36 +215,30 @@ def auto_start_callback(bot, update):
 
 
 def message_answer(bot, update):
-    user_id = update.message.from_user.id
+    user_id = check_user(bot, update)
 
-    if user_id not in bot_collection:
+    if user_id:
 
-        existed = try_load(user_id)
+        bot_message, timer_on, prev_message = bot_collection[user_id].check_user_message(bot, update, settings_update)
 
-        if not existed:
-            start_callback(bot, update)
+        if not bot_message:
             return
 
-    bot_message, timer_on, prev_message = bot_collection[user_id].check_user_message(bot, update, settings_update)
+        bot.send_message(chat_id=user_id, text=bot_message)
 
-    if not bot_message:
-        return
+        if timer_on and not bot_collection[user_id].auto_start:
+            bot_message = bot_collection[user_id].get_current_timer_message()
+            reply_markup = InlineKeyboardMarkup(get_keyboard_buttons('start', bot_collection[user_id].lang, user_id))
+            sent_message = bot.send_message(chat_id=user_id, text=bot_message, reply_markup=reply_markup)
+            bot_collection[user_id].message_id = sent_message.message_id
 
-    bot.send_message(chat_id=user_id, text=bot_message)
+        elif timer_on and bot_collection[user_id].auto_start:
+            sent_message = bot.send_message(chat_id=user_id, text='First timer is about to start')
+            bot_collection[user_id].message_id = sent_message.message_id
+            start_timer(bot, user_id, sent_message.message_id)
 
-    if timer_on and not bot_collection[user_id].auto_start:
-        bot_message = bot_collection[user_id].get_current_timer_message()
-        reply_markup = InlineKeyboardMarkup(get_keyboard_buttons('start', bot_collection[user_id].lang, user_id))
-        sent_message = bot.send_message(chat_id=user_id, text=bot_message, reply_markup=reply_markup)
-        bot_collection[user_id].message_id = sent_message.message_id
-
-    elif timer_on and bot_collection[user_id].auto_start:
-        sent_message = bot.send_message(chat_id=user_id, text='First timer is about to start')
-        bot_collection[user_id].message_id = sent_message.message_id
-        start_timer(bot, user_id, sent_message.message_id)
-
-    if prev_message:
-        set_old_timers_message(bot, user_id, prev_message)
+        if prev_message:
+            set_old_timers_message(bot, user_id, prev_message)
 
 
 # ----------------------------------------------
@@ -508,6 +477,17 @@ def repeat_timers(bot, chat_id, message_id):
     bot_collection[chat_id].timers.repeat()
     start_timer(bot, chat_id, message_id)
 
+def check_user(bot, update):
+    user_id = update.message.from_user.id
+
+    if user_id not in bot_collection:
+        existed = try_load(user_id)
+
+        if not existed:
+            start_callback(bot, update)
+            return False
+
+    return user_id
 
 def save_timers(user_id):
     """Save current timers settings for a user"""
@@ -526,7 +506,6 @@ def save_timers(user_id):
         'current_time': bot_collection[user_id].timers.current_time
 
     })
-
 
 
 def load_timers(bot):
