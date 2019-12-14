@@ -59,11 +59,11 @@ def send_confirmation(bot, user_id, lang, minutes):
         message = 'Таймер на {} мин. установлен'.format(minutes)
 
     bot_message = bot.send_message(chat_id=user_id, text=message)
-    message_id = bot_message.message_id
+    # message_id = bot_message.message_id
 
-    del_msg = delete_message(bot, user_id, message_id)
-
-    threading.Timer(5, del_msg).start()
+    # del_msg = delete_message(bot, user_id, message_id)
+    #
+    # threading.Timer(5, del_msg).start()
 
 
 
