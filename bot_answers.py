@@ -161,6 +161,7 @@ class TimeManagerBot:
 
         return message
 
+
     def get_current_timer_message(self):
         if self.timers.scheduled_bunch:
             next_timer = self.timers.scheduled_bunch[0]
@@ -381,7 +382,7 @@ class TimeManagerBot:
 
     def get_remained_message(self, minutes):
         if self.lang == 'EN':
-            message = 'Remain {} min'.format(minutes)
+            message = '{} min remain'.format(minutes)
         else:
             message = 'Осталось {} мин.'.format(minutes)
 
