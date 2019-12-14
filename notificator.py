@@ -28,8 +28,14 @@ def send_update_notification(bot, db_number):
 
         message = get_update_notification(lang)
 
-        bot.send_message(chat_id=user_id, text=message, parse_mode=ParseMode.MARKDOWN)
-        backup.set(user_id, 'OK')
+        try:
+
+            bot.send_message(chat_id=user_id, text=message, parse_mode=ParseMode.MARKDOWN)
+            backup.set(user_id, 'OK')
+
+        except:
+            
+            pass
 
         time.sleep(0.05)
 
