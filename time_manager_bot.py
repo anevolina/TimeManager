@@ -616,4 +616,4 @@ load_timers(updater.bot)
 
 #Send notification about updates etc.
 
-send_update_notification(updater.bot, 1)
+# send_update_notification(updater.bot, 1)
