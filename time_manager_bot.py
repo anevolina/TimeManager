@@ -315,7 +315,11 @@ def start_timer(bot, chat_id, message_id, extended=False):
         keyboard_buttons = get_keyboard_buttons('pause', bot_collection[chat_id].lang, chat_id)
         reply_markup = InlineKeyboardMarkup(keyboard_buttons)
         message = bot_collection[chat_id].get_started_timer_message()
-        bot.edit_message_text(text=message, chat_id=chat_id, message_id=message_id, reply_markup=reply_markup)
+        try:
+            bot.edit_message_text(text=message, chat_id=chat_id, message_id=message_id, reply_markup=reply_markup)
+
+        except:
+            pass
 
     save_timers(chat_id)
 
@@ -526,8 +530,12 @@ def load_timers(bot):
             message = 'Current timers were turned off due to inactivity\n\n' \
                       'Текущие таймеры были отключены в связи с неактивностью'
 
-            bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
-            timers_settings.delete(user)
+            try:
+                bot.edit_message_text(text=message, chat_id=user_id, message_id=message_id)
+                timers_settings.delete(user)
+
+            except:
+                pass
 
             continue
 
